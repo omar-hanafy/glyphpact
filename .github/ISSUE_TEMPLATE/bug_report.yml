@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible compiler, package, or plugin defect.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove private artwork before attaching a reproduction. A minimal SVG is ideal.
+  - type: input
+    id: version
+    attributes:
+      label: GlyphPact version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - CLI
+        - Python package
+        - MCP server
+        - Claude Code plugin
+        - Codex plugin
+        - Generated Flutter integration
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the command or tool call, minimal inputs, and exact diagnostic.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Python, Flutter, Claude Code, or Codex versions as relevant.
+    validations:
+      required: true
