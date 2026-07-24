@@ -273,10 +273,18 @@ async def _terminate_windows_process_tree(process: asyncio.subprocess.Process) -
         ) from error
     if killer.returncode != 0:
         rendered = stderr.decode("utf-8", errors="replace").strip()[:_MAX_STDERR_BYTES]
-        await _kill_parent_bounded(
-            process,
-            context="Windows taskkill could not guarantee worker cleanup",
-        )
+        try:
+            # taskkill reports a nonzero status when a short-lived process
+            # exits while its tree is being enumerated. Preserve the original
+            # bounded MCP result when the asyncio process has already observed
+            # that clean exit.
+            await asyncio.wait_for(process.wait(), timeout=0.5)
+            return
+        except TimeoutError:
+            await _kill_parent_bounded(
+                process,
+                context="Windows taskkill could not guarantee worker cleanup",
+            )
         raise RuntimeError(
             "Windows taskkill could not guarantee compiler worker cleanup"
             + (f": {rendered}" if rendered else ".")
@@ -427,6 +435,7 @@ async def _run_cli(arguments: list[str], *, timeout_seconds: int) -> dict[str, A
             "glyphpact",
             *arguments,
             "--json",
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=safe_working_directory,

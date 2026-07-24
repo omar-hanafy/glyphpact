@@ -38,6 +38,7 @@ from glyphpact.output_lock import output_lock
 from glyphpact.publisher import (
     MARKER,
     _create_transaction_backup,
+    _fsync_file,
     marker_bytes,
     recover_output,
     verify_output_ownership,
@@ -260,6 +261,23 @@ def test_interrupted_adoption_restores_foreign_output_without_claiming_it(tmp_pa
     with pytest.raises(IconFontError) as caught:
         verify_output_ownership(output, adopt=False)
     assert caught.value.diagnostic.code == "OUTPUT_NOT_OWNED"
+
+
+def test_transaction_fsync_uses_a_windows_compatible_writable_handle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    marker = tmp_path / "marker.json"
+    marker.write_bytes(b"marker")
+
+    def require_writable_descriptor(descriptor: int) -> None:
+        os.write(descriptor, b"")
+
+    monkeypatch.setattr(os, "fsync", require_writable_descriptor)
+
+    _fsync_file(marker)
+
+    assert marker.read_bytes() == b"marker"
 
 
 def test_equivalent_solid_paint_aliases_are_one_paint(tmp_path: Path) -> None:
@@ -1033,6 +1051,64 @@ def test_discovery_budget_counts_unrelated_files_before_sorting(tmp_path: Path) 
         )
 
     assert caught.value.diagnostic.code == "INPUT_TREE_TOO_LARGE"
+
+
+def test_discovery_refreshes_windows_dir_entry_identity(tmp_path: Path, monkeypatch) -> None:
+    inputs = tmp_path / "icons"
+    write_svg(inputs, "icon.svg", SQUARE_SVG)
+    real_scandir = os.scandir
+    cached_stat_calls: list[Path] = []
+
+    class WindowsCachedStatus:
+        def __init__(self, status: os.stat_result) -> None:
+            self.st_mode = status.st_mode
+            self.st_ino = 0
+            self.st_dev = 0
+            self.st_nlink = 0
+            self.st_size = status.st_size
+            self.st_mtime_ns = status.st_mtime_ns
+            self.st_ctime_ns = status.st_ctime_ns
+            self.st_file_attributes = getattr(status, "st_file_attributes", 0)
+
+    class WindowsDirEntry:
+        def __init__(self, entry) -> None:
+            self._entry = entry
+            self.name = entry.name
+            self.path = entry.path
+
+        def stat(self, *, follow_symlinks: bool = True):
+            cached_stat_calls.append(Path(self.path))
+            return WindowsCachedStatus(self._entry.stat(follow_symlinks=follow_symlinks))
+
+    class WindowsScandir:
+        def __init__(self, path) -> None:
+            self._iterator = real_scandir(path)
+
+        def __enter__(self):
+            self._iterator.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self._iterator.__exit__(*args)
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            return WindowsDirEntry(next(self._iterator))
+
+    monkeypatch.setattr(discovery_module.os, "scandir", WindowsScandir)
+
+    sources = discover_svg_sources(
+        inputs,
+        max_bytes=1024,
+        max_total_bytes=4096,
+        max_icons=10,
+        max_entries=10,
+    )
+
+    assert [source.source_id for source in sources] == ["icon.svg"]
+    assert cached_stat_calls == []
 
 
 def test_discovery_rejects_directory_swap_before_descriptor_read(

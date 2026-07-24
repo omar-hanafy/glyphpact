@@ -146,7 +146,6 @@ def test_check_maps_drift_to_stale(tmp_path: Path) -> None:
     [
         ({}, "exactly one"),
         ({"input_path": "relative"}, "absolute"),
-        ({"input_path": "/definitely/missing/glyphpact"}, "cannot be resolved"),
         ({"classification": "fatal"}, "classification"),
     ],
 )
@@ -164,6 +163,13 @@ def test_mcp_inputs_fail_closed(
         return
     with pytest.raises(ValueError, match=message):
         asyncio.run(audit_icon_pack(**arguments))
+
+
+def test_mcp_missing_absolute_path_fails_closed(tmp_path: Path) -> None:
+    missing = tmp_path / "definitely-missing"
+
+    with pytest.raises(ValueError, match="cannot be resolved"):
+        asyncio.run(audit_icon_pack(input_path=str(missing)))
 
 
 def test_audit_preserves_top_level_symlink_for_canonical_rejection(tmp_path: Path) -> None:
@@ -277,6 +283,47 @@ def test_cli_stdout_limit_returns_one_typed_bounded_failure(
     assert result["temporaryArtifactsRemoved"] is True
     assert result["findings"]["total"] == 1
     assert result["findings"]["items"][0]["code"] == "MCP_CLI_OUTPUT_TOO_LARGE"
+
+
+def test_windows_taskkill_exit_race_does_not_mask_the_bounded_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class CompilerProcess:
+        pid = 101
+        returncode: int | None = None
+        killed = False
+
+        async def wait(self) -> int:
+            assert self.returncode is not None
+            return self.returncode
+
+        def kill(self) -> None:
+            self.killed = True
+            self.returncode = -1
+
+    compiler = CompilerProcess()
+
+    class TaskkillProcess:
+        returncode = 1
+
+        async def communicate(self) -> tuple[bytes, bytes]:
+            compiler.returncode = 0
+            return b"", b"The process exited while taskkill enumerated its tree."
+
+    async def fake_create_subprocess_exec(*args: object, **kwargs: object) -> TaskkillProcess:
+        return TaskkillProcess()
+
+    monkeypatch.setattr(
+        mcp_tools,
+        "_windows_system_executable",
+        lambda filename: Path("C:/Windows/System32") / filename,
+    )
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+
+    asyncio.run(mcp_tools._terminate_windows_process_tree(compiler))
+
+    assert compiler.returncode == 0
+    assert compiler.killed is False
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows process-tree teardown contract")

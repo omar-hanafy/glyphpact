@@ -38,7 +38,10 @@ def _transaction_marker_bytes() -> bytes:
 
 
 def _fsync_file(path: Path) -> None:
-    with path.open("rb") as stream:
+    # Windows rejects fsync on a descriptor opened read-only with EBADF.
+    # Generated files are owned by this transaction, so keep the handle
+    # writable while flushing it on every supported platform.
+    with path.open("r+b") as stream:
         os.fsync(stream.fileno())
 
 

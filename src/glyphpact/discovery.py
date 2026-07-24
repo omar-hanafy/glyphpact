@@ -255,7 +255,7 @@ def _walk(root: Path, max_icons: int, max_entries: int) -> list[_DiscoveredSvg]:
         for entry in sorted(entries, key=lambda value: os.fsencode(value.name)):
             path = Path(entry.path)
             try:
-                status = entry.stat(follow_symlinks=False)
+                status = path.lstat()
             except OSError as error:
                 raise IconFontError("INPUT_PATH_INVALID", str(error), source=str(path)) from error
             entry_is_junction = getattr(path, "is_junction", lambda: False)
