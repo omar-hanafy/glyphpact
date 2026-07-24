@@ -293,12 +293,20 @@ async def _terminate_windows_process_tree(process: asyncio.subprocess.Process) -
         ) from error
 
 
+def _signal_process_group(process_id: int, signal_name: str) -> None:
+    kill_group = getattr(os, "killpg", None)
+    signal_value = getattr(signal, signal_name, None)
+    if not callable(kill_group) or signal_value is None:
+        raise RuntimeError("POSIX process-group signaling is unavailable.")
+    kill_group(process_id, signal_value)
+
+
 async def _terminate_process(process: asyncio.subprocess.Process) -> None:
     if process.returncode is not None:
         return
     if os.name == "posix":
         with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
+            _signal_process_group(process.pid, "SIGTERM")
     else:
         await _terminate_windows_process_tree(process)
         return
@@ -309,7 +317,7 @@ async def _terminate_process(process: asyncio.subprocess.Process) -> None:
         pass
     if os.name == "posix":
         with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
+            _signal_process_group(process.pid, "SIGKILL")
     try:
         await asyncio.wait_for(process.wait(), timeout=5)
     except ProcessLookupError:

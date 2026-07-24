@@ -63,6 +63,16 @@ def _is_reparse_point(status: os.stat_result) -> bool:
     return bool(flag and getattr(status, "st_file_attributes", 0) & flag)
 
 
+def _is_mount(path: Path) -> bool:
+    check = getattr(path, "is_mount", None)
+    if not callable(check):
+        return False
+    try:
+        return bool(check())
+    except NotImplementedError:
+        return False
+
+
 def _safe_relative_text(value: str) -> str:
     try:
         value.encode("utf-8")
@@ -83,7 +93,7 @@ def _scan_output_tree(root: Path) -> tuple[dict[str, Path], set[str], set[str]]:
         or _is_reparse_point(root_status)
         or is_junction()
         or not stat.S_ISDIR(root_status.st_mode)
-        or root.is_mount()
+        or _is_mount(root)
     ):
         raise IconFontError(
             "OUTPUT_PATH_INVALID",
@@ -133,7 +143,7 @@ def _scan_output_tree(root: Path) -> tuple[dict[str, Path], set[str], set[str]]:
                     source=str(path),
                 )
             if stat.S_ISDIR(status.st_mode):
-                if path.is_mount():
+                if _is_mount(path):
                     raise IconFontError(
                         "OUTPUT_MOUNT_FORBIDDEN",
                         "Generated output cannot contain nested mount points.",

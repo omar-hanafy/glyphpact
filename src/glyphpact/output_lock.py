@@ -42,8 +42,7 @@ def _lock_file(stream: BinaryIO) -> None:
         stream.seek(0)
         msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
     else:
-        import fcntl
-
+        fcntl = importlib.import_module("fcntl")
         fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
@@ -54,8 +53,7 @@ def _unlock_file(stream: BinaryIO) -> None:
             stream.seek(0)
             msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
         else:
-            import fcntl
-
+            fcntl = importlib.import_module("fcntl")
             fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
     except OSError:
         # Closing the descriptor releases an advisory lock even if an explicit

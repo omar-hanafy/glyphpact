@@ -184,6 +184,16 @@ def _is_reparse_point(status: os.stat_result) -> bool:
     return bool(flag and getattr(status, "st_file_attributes", 0) & flag)
 
 
+def _is_mount(path: Path) -> bool:
+    check = getattr(path, "is_mount", None)
+    if not callable(check):
+        return False
+    try:
+        return bool(check())
+    except NotImplementedError:
+        return False
+
+
 def _walk(root: Path, max_icons: int, max_entries: int) -> list[_DiscoveredSvg]:
     try:
         root_status = root.lstat()
@@ -257,7 +267,7 @@ def _walk(root: Path, max_icons: int, max_entries: int) -> list[_DiscoveredSvg]:
                     hint="Copy the file or directory into the input tree.",
                 )
             if stat.S_ISDIR(status.st_mode):
-                if path.is_mount():
+                if _is_mount(path):
                     raise IconFontError(
                         "INPUT_MOUNT_FORBIDDEN",
                         "Nested mount points are not traversed during icon discovery.",
