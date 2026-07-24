@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/schema/icon-font-config.schema.json",
+  "title": "GlyphPact config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["input", "output"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "input": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Input path. Runtime portability checks use at most 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+    },
+    "output": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Output path. Runtime portability checks use at most 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+    },
+    "fontFamily": { "type": "string", "minLength": 1, "maxLength": 63 },
+    "className": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Z][A-Za-z0-9_]*$",
+      "maxLength": 40,
+      "description": "Generated Dart provider class. Omit or use null to derive it; an explicit empty string is invalid."
+    },
+    "fontPackage": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_]*$" },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Independent global handling for fidelity loss and sources without a faithful conversion in the bounded deterministic SVG profile. Both axes default to error; per-icon partialAlpha is a narrower scoped fallback permission.",
+      "properties": {
+        "lossy": { "enum": ["error", "convert"], "default": "error" },
+        "unrepresentable": { "enum": ["error", "skip"], "default": "error" }
+      }
+    },
+    "textFonts": {
+      "type": "object",
+      "maxProperties": 64,
+      "description": "Explicitly pinned font faces available to the bounded SVG text outliner. Relative file paths resolve from this config file and every file is verified against sha256 before use.",
+      "propertyNames": { "type": "string", "minLength": 1, "maxLength": 127 },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file", "sha256"],
+        "properties": {
+          "file": { "type": "string", "minLength": 1, "maxLength": 4096 },
+          "sha256": { "type": "string", "pattern": "^[0-9A-Fa-f]{64}$" }
+        }
+      }
+    },
+    "startCodepoint": {
+      "description": "Unicode private-use scalar. String forms contain only decimal digits or a 0x-prefixed hexadecimal value, without surrounding whitespace, and are checked semantically by the compiler.",
+      "oneOf": [
+        {
+          "type": "integer",
+          "anyOf": [
+            { "minimum": 57344, "maximum": 63743 },
+            { "minimum": 983040, "maximum": 1048573 },
+            { "minimum": 1048576, "maximum": 1114109 }
+          ]
+        },
+        {
+          "type": "string",
+          "maxLength": 8,
+          "pattern": "^(0[xX][0-9A-Fa-f]+|[0-9]+)$"
+        }
+      ]
+    },
+    "unitsPerEm": { "type": "integer", "minimum": 16, "maximum": 16384 },
+    "precision": { "type": "integer", "minimum": 0, "maximum": 6 },
+    "padding": { "type": "number", "minimum": 0, "exclusiveMaximum": 0.5 },
+    "clipToViewBox": { "type": "boolean" },
+    "maxFileBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+    "maxTotalInputBytes": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+    "maxIcons": { "type": "integer", "minimum": 1, "maximum": 65534 },
+    "maxDiscoveryEntries": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "maxElements": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "maxExpandedElements": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "maxExpandedBytes": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+    "maxPathCommands": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+    "maxTotalPathCommands": { "type": "integer", "minimum": 1, "maximum": 20000000 },
+    "jobs": { "type": "integer", "minimum": 0, "maximum": 61 },
+    "fontFile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Relative artifact path. Runtime enforces 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+    },
+    "dartFile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Relative artifact path. Runtime enforces 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+    },
+    "lockFile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Relative artifact path. Runtime enforces 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+    },
+    "reportFile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Relative artifact path. Runtime enforces 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+    },
+    "copyright": { "type": ["string", "null"] },
+    "icons": {
+      "type": "object",
+      "propertyNames": {
+        "maxLength": 4096,
+        "description": "Source ID. Runtime enforces 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": ["string", "null"], "pattern": "^[a-z][A-Za-z0-9_]*$", "maxLength": 40 },
+          "matchTextDirection": { "type": ["boolean", "null"] },
+          "partialAlpha": {
+            "type": ["object", "null"],
+            "description": "Opt into lossless ordered solid-alpha layer fonts while retaining a compatible single-glyph fallback.",
+            "additionalProperties": false,
+            "required": ["mode"],
+            "properties": {
+              "mode": { "const": "layers" },
+              "fallback": {
+                "enum": ["silhouette", "opaque-only"],
+                "default": "silhouette"
+              }
+            }
+          },
+          "author": { "type": ["string", "null"] },
+          "license": { "type": ["string", "null"] },
+          "sourceUrl": { "type": ["string", "null"] },
+          "copyright": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

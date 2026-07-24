@@ -1,0 +1,132 @@
+[build-system]
+requires = ["hatchling==1.31.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glyphpact"
+version = "1.0.0"
+description = "The deterministic SVG-to-Flutter icon compiler."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Omar Hanafy" }]
+keywords = ["flutter", "icon-font", "svg", "opentype", "dart"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+  "Topic :: Software Development :: Code Generators",
+  "Typing :: Typed",
+]
+dependencies = [
+  "absl-py==2.5.0",
+  "cssselect2==0.9.0",
+  "fonttools==4.63.0",
+  "lxml==6.1.1",
+  "picosvg==0.22.3",
+  "skia-pathops==0.9.2",
+  "tinycss2==1.5.1",
+  "uharfbuzz==0.55.0",
+  "webcolors==24.11.1",
+]
+
+[project.optional-dependencies]
+mcp = [
+  "jsonschema>=4.25,<5",
+  "mcp>=1.28,<2",
+]
+
+[project.scripts]
+glyphpact = "glyphpact.cli:main"
+glyphpact-mcp = "glyphpact.mcp_server:main"
+
+[project.urls]
+Repository = "https://github.com/omar-hanafy/glyphpact"
+Issues = "https://github.com/omar-hanafy/glyphpact/issues"
+Changelog = "https://github.com/omar-hanafy/glyphpact/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/omar-hanafy/glyphpact#readme"
+
+[dependency-groups]
+dev = [
+  "jsonschema>=4.25,<5",
+  "mypy>=1.17,<2",
+  "pytest>=8.4,<9",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/glyphpact"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"schema" = "glyphpact/schema"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/docs",
+  "/examples",
+  "/schema",
+  "/src",
+  "/tests",
+  "/.gitignore",
+  "/CHANGELOG.md",
+  "/CONTRIBUTING.md",
+  "/LICENSE",
+  "/NOTICE",
+  "/README.md",
+  "/SECURITY.md",
+  "/pyproject.toml",
+  "/uv.lock",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+markers = ["flutter: requires a local Flutter SDK and runs integration validation"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src/glyphpact"]
+exclude = ["tests"]
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+  "cssselect2",
+  "fontTools.*",
+  "jsonschema",
+  "lxml.*",
+  "pathops",
+  "picosvg.*",
+  "tinycss2",
+  "uharfbuzz",
+  "webcolors",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+  "glyphpact.font_builder",
+  "glyphpact.svg_compiler",
+  "glyphpact.text_outliner",
+]
+disallow_untyped_calls = false

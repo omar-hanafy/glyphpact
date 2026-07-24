@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/schema/ownership-marker.schema.json",
+  "title": "GlyphPact output ownership marker",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "owner"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "owner": { "const": "glyphpact" }
+  }
+}

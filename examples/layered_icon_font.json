@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/schema/icon-font-config.schema.json",
+  "input": "layered",
+  "output": "generated/layered_icons",
+  "fontFamily": "LayeredIcons",
+  "className": "LayeredIcons",
+  "startCodepoint": "0xE000",
+  "policy": {
+    "lossy": "error",
+    "unrepresentable": "error"
+  },
+  "icons": {
+    "verified_layers.svg": {
+      "name": "verifiedLayers",
+      "partialAlpha": {
+        "mode": "layers",
+        "fallback": "silhouette"
+      },
+      "author": "GlyphPact contributors",
+      "license": "MIT",
+      "sourceUrl": "https://github.com/omar-hanafy/glyphpact/tree/main/examples/layered"
+    }
+  }
+}

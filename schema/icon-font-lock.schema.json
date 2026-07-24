@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/schema/icon-font-lock.schema.json",
+  "title": "GlyphPact lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generator",
+    "generatorVersion",
+    "fontFamily",
+    "className",
+    "fontPackage",
+    "startCodepoint",
+    "unitsPerEm",
+    "glyphs",
+    "retired"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generator": { "const": "glyphpact" },
+    "generatorVersion": { "type": "string" },
+    "fontFamily": { "type": "string" },
+    "className": { "type": "string", "maxLength": 40 },
+    "fontPackage": { "type": ["string", "null"] },
+    "startCodepoint": { "type": "string", "pattern": "^0x[0-9A-F]+$" },
+    "unitsPerEm": { "type": "integer" },
+    "glyphs": { "$ref": "#/$defs/glyphArray" },
+    "retired": { "$ref": "#/$defs/glyphArray" }
+  },
+  "$defs": {
+    "glyphArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/glyph" }
+    },
+    "glyph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "name", "codepoint", "sourceSha256", "matchTextDirection"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "description": "Normalized relative source ID. Runtime enforces 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
+        },
+        "name": { "type": "string", "pattern": "^[a-z][A-Za-z0-9_]*$", "maxLength": 40 },
+        "codepoint": { "type": "string", "pattern": "^0x[0-9A-F]+$" },
+        "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "geometrySha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "matchTextDirection": { "type": "boolean" },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  }
+}
