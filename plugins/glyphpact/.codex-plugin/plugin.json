@@ -1,0 +1,32 @@
+{
+  "name": "glyphpact",
+  "version": "1.0.0",
+  "description": "Compile and verify large SVG sets as deterministic Flutter IconData fonts through a bundled GlyphPact MCP server and project integration skill.",
+  "author": {
+    "name": "Omar Hanafy",
+    "url": "https://github.com/omar-hanafy"
+  },
+  "homepage": "https://github.com/omar-hanafy/glyphpact",
+  "repository": "https://github.com/omar-hanafy/glyphpact",
+  "license": "MIT",
+  "keywords": [
+    "flutter",
+    "svg",
+    "icon-font",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "GlyphPact",
+    "shortDescription": "Build reliable Flutter icon fonts from SVG sets.",
+    "longDescription": "Audit, compile, check, wire, and visually verify large SVG collections as deterministic Flutter IconData fonts while preserving stable codepoints and surfacing every approximation or unsupported source.",
+    "developerName": "Omar Hanafy",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Use $sync-flutter-svg-icons to audit and integrate these SVG icons into my Flutter project with strict fidelity."
+  }
+}

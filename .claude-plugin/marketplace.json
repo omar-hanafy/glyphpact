@@ -1,0 +1,15 @@
+{
+  "name": "glyphpact",
+  "owner": {
+    "name": "Omar Hanafy",
+    "url": "https://github.com/omar-hanafy"
+  },
+  "description": "Deterministic SVG-to-Flutter icon-font tooling for Claude Code and Codex.",
+  "plugins": [
+    {
+      "name": "glyphpact",
+      "source": "./plugins/glyphpact",
+      "description": "Audit, compile, check, wire, and visually verify large SVG sets as stable Flutter IconData fonts."
+    }
+  ]
+}

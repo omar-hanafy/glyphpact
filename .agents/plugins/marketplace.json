@@ -1,0 +1,20 @@
+{
+  "name": "glyphpact",
+  "interface": {
+    "displayName": "GlyphPact"
+  },
+  "plugins": [
+    {
+      "name": "glyphpact",
+      "source": {
+        "source": "local",
+        "path": "./plugins/glyphpact"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

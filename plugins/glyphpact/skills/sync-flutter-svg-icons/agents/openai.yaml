@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync Flutter SVG Icons"
+  short_description: "Compile, wire, and verify Flutter SVG icon fonts"
+  default_prompt: "Use $sync-flutter-svg-icons to compile and verify these SVG icons in my Flutter project with strict fidelity."

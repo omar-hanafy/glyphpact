@@ -1,0 +1,3 @@
+dist/*.whl binary
+dist/*.sha256 text eol=lf
+dist/*.txt text eol=lf
