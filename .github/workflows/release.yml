@@ -78,7 +78,11 @@ jobs:
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --verify-tag
+        run: >-
+          gh release create "${GITHUB_REF_NAME}" dist/*
+          --repo "${GITHUB_REPOSITORY}"
+          --generate-notes
+          --verify-tag
 
   pypi:
     if: github.event_name == 'workflow_dispatch' && inputs.publish_pypi
