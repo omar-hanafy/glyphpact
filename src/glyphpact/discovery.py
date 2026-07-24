@@ -43,6 +43,26 @@ class _SvgReadError(IconFontError):
         super().__init__(code, message, source=source, hint=hint, details=details)
 
 
+def _same_discovered_file(
+    expected: os.stat_result,
+    opened: os.stat_result,
+    *,
+    windows: bool | None = None,
+) -> bool:
+    if windows is None:
+        windows = os.name == "nt"
+    if (opened.st_dev, opened.st_ino) != (expected.st_dev, expected.st_ino) or (
+        opened.st_size,
+        opened.st_mtime_ns,
+    ) != (expected.st_size, expected.st_mtime_ns):
+        return False
+    # Windows path-based stat and descriptor-based fstat can report different
+    # creation-time values. st_ctime is deprecated there and is not a portable
+    # change detector. The file identity, size, and modification time remain
+    # binding; POSIX additionally has reliable metadata-change time.
+    return windows or opened.st_ctime_ns == expected.st_ctime_ns
+
+
 def _read_svg(
     discovered: _DiscoveredSvg,
     source_id: str,
@@ -76,12 +96,7 @@ def _read_svg(
         try:
             before = os.fstat(descriptor)
             expected = discovered.status
-            if (
-                not stat.S_ISREG(before.st_mode)
-                or (before.st_dev, before.st_ino) != (expected.st_dev, expected.st_ino)
-                or (before.st_size, before.st_mtime_ns, before.st_ctime_ns)
-                != (expected.st_size, expected.st_mtime_ns, expected.st_ctime_ns)
-            ):
+            if not stat.S_ISREG(before.st_mode) or not _same_discovered_file(expected, before):
                 raise _SvgReadError(
                     "SVG_SOURCE_CHANGED",
                     "The opened SVG is not the regular file observed during discovery.",

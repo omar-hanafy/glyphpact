@@ -7,6 +7,7 @@ import shutil
 import struct
 from io import BytesIO
 from pathlib import Path, PurePosixPath
+from types import SimpleNamespace
 
 import pathops
 import pytest
@@ -23,7 +24,7 @@ from glyphpact.config import (
     LossyPolicy,
     load_config,
 )
-from glyphpact.discovery import SvgSource, discover_svg_sources
+from glyphpact.discovery import SvgSource, _same_discovered_file, discover_svg_sources
 from glyphpact.errors import (
     BatchError,
     IconFontError,
@@ -41,6 +42,7 @@ from glyphpact.publisher import (
     _fsync_file,
     marker_bytes,
     recover_output,
+    validate_output_tree,
     verify_output_ownership,
 )
 from glyphpact.svg_compiler import compile_svg
@@ -1053,9 +1055,12 @@ def test_discovery_budget_counts_unrelated_files_before_sorting(tmp_path: Path) 
     assert caught.value.diagnostic.code == "INPUT_TREE_TOO_LARGE"
 
 
-def test_discovery_refreshes_windows_dir_entry_identity(tmp_path: Path, monkeypatch) -> None:
+def test_scans_refresh_windows_dir_entry_identity(tmp_path: Path, monkeypatch) -> None:
     inputs = tmp_path / "icons"
     write_svg(inputs, "icon.svg", SQUARE_SVG)
+    output = tmp_path / "generated"
+    output.mkdir()
+    (output / "generated.txt").write_text("generated", encoding="utf-8")
     real_scandir = os.scandir
     cached_stat_calls: list[Path] = []
 
@@ -1106,9 +1111,61 @@ def test_discovery_refreshes_windows_dir_entry_identity(tmp_path: Path, monkeypa
         max_icons=10,
         max_entries=10,
     )
+    validate_output_tree(output)
 
     assert [source.source_id for source in sources] == ["icon.svg"]
     assert cached_stat_calls == []
+
+
+def test_output_tree_rejects_actual_hardlinks(tmp_path: Path) -> None:
+    output = tmp_path / "generated"
+    output.mkdir()
+    original = output / "generated.txt"
+    original.write_text("generated", encoding="utf-8")
+    os.link(original, output / "alias.txt")
+
+    with pytest.raises(IconFontError) as caught:
+        validate_output_tree(output)
+
+    assert caught.value.diagnostic.code == "OUTPUT_HARDLINK_FORBIDDEN"
+
+
+def test_windows_discovery_ignores_nonportable_ctime_disagreement() -> None:
+    metadata = {
+        "st_dev": 1,
+        "st_ino": 2,
+        "st_size": 3,
+        "st_mtime_ns": 4,
+        "st_ctime_ns": 5,
+    }
+    expected = SimpleNamespace(**metadata)
+    opened = SimpleNamespace(**(metadata | {"st_ctime_ns": 6}))
+
+    assert _same_discovered_file(expected, opened, windows=True)  # type: ignore[arg-type]
+    assert not _same_discovered_file(expected, opened, windows=False)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("st_dev", 9),
+        ("st_ino", 9),
+        ("st_size", 9),
+        ("st_mtime_ns", 9),
+    ],
+)
+def test_windows_discovery_rejects_binding_metadata_mismatches(field: str, value: int) -> None:
+    metadata = {
+        "st_dev": 1,
+        "st_ino": 2,
+        "st_size": 3,
+        "st_mtime_ns": 4,
+        "st_ctime_ns": 5,
+    }
+    expected = SimpleNamespace(**metadata)
+    opened = SimpleNamespace(**(metadata | {field: value}))
+
+    assert not _same_discovered_file(expected, opened, windows=True)  # type: ignore[arg-type]
 
 
 def test_discovery_rejects_directory_swap_before_descriptor_read(

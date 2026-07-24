@@ -133,7 +133,7 @@ def _scan_output_tree(root: Path) -> tuple[dict[str, Path], set[str], set[str]]:
             path = Path(entry.path)
             relative = path.relative_to(root).as_posix()
             try:
-                status = entry.stat(follow_symlinks=False)
+                status = path.lstat()
             except OSError as error:
                 raise IconFontError(
                     "OUTPUT_TREE_READ_FAILED", str(error), source=str(path)
