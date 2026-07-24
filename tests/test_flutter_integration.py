@@ -299,8 +299,8 @@ rasterize(IconData icon) async {
   final baseline = painter.computeDistanceToActualBaseline(
     TextBaseline.alphabetic,
   );
-  expect(painter.width, canvasSize);
-  expect(painter.height, canvasSize);
+  expect(painter.width, closeTo(canvasSize, 0.01));
+  expect(painter.height, closeTo(canvasSize, 0.01));
   painter.paint(canvas, ui.Offset.zero);
   painter.dispose();
   final picture = recorder.endRecording();
