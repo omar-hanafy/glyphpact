@@ -27,7 +27,7 @@ const BASE = import.meta.env.BASE_URL ?? '/';
  * value has no matching `v<version>` git tag.
  */
 export const RELEASE = {
-  version: '1.0.0',
+  version: '1.0.1',
   /** Verified by direct inspection of this repository on this date. */
   verifiedOn: '2026-07-25',
 } as const;
@@ -75,7 +75,7 @@ export const site = {
 } as const;
 
 /** The install command shown across the site. Verified against README.md. */
-export const INSTALL_COMMAND = `uv tool install git+${REPO}.git@${TAG}`;
+export const INSTALL_COMMAND = 'uv tool install glyphpact';
 
 /* ------------------------------------------------------------------ URLs */
 

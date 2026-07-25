@@ -26,12 +26,13 @@ for (const viewport of viewports) {
         await page.goto(route);
         await expect(page.locator('main')).toBeVisible();
 
-        const dimensions = await page.evaluate(() => ({
-          clientWidth: document.documentElement.clientWidth,
-          scrollWidth: document.documentElement.scrollWidth,
-        }));
-
-        expect(dimensions.scrollWidth).toBe(dimensions.clientWidth);
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            ),
+          )
+          .toBe(0);
       });
     }
   });
@@ -51,3 +52,27 @@ for (const colorScheme of ['dark', 'light'] as const) {
     expect(results.violations).toEqual([]);
   });
 }
+
+test('public install guidance uses PyPI and pins only CI', async ({ page }) => {
+  await page.goto('/glyphpact/');
+  await expect(page.locator('.gp-install__cmd code').first()).toHaveText(
+    'uv tool install glyphpact',
+  );
+
+  await page.goto('/glyphpact/flutter/');
+  await expect(page.locator('body')).toContainText('uv tool install glyphpact==1.0.1');
+  await expect(page.locator('body')).not.toContainText('uv tool install git+');
+});
+
+test('machine-readable release facts match v1.0.1', async ({ page }) => {
+  await page.goto('/glyphpact/llms.txt');
+  await expect(page.locator('body')).toContainText('Current release: v1.0.1');
+  await expect(page.locator('body')).toContainText('uv tool install glyphpact');
+  await expect(page.locator('body')).not.toContainText('uv tool install git+');
+
+  await page.goto('/glyphpact/');
+  const schemas = await page
+    .locator('script[type="application/ld+json"]')
+    .evaluateAll((nodes) => nodes.map((node) => JSON.parse(node.textContent ?? '{}')));
+  expect(JSON.stringify(schemas)).toContain('"softwareVersion":"1.0.1"');
+});

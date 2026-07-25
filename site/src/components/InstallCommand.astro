@@ -7,17 +7,17 @@ interface Props {
   /** Screen-reader description of what the command does. */
   label?: string;
   /**
-   * Explain the pinned tag. Worth showing wherever the install command is the
-   * primary call to action, and worth omitting when it appears a second time on
-   * the same page.
+   * Explain how the stable PyPI install behaves. Worth showing wherever the
+   * install command is the primary call to action, and worth omitting when it
+   * appears a second time on the same page.
    */
-  explainPin?: boolean;
+  explainInstall?: boolean;
 }
 
 const {
   command = INSTALL_COMMAND,
   label = 'Copy the install command',
-  explainPin = false,
+  explainInstall = false,
 } = Astro.props;
 ---
 
@@ -33,11 +33,12 @@ const {
   </div>
 
   {
-    explainPin && (
+    explainInstall && (
       <p class="gp-install__pin">
-        Pinned to <strong>v{RELEASE.version}</strong> for a reproducible install.
-        {' '}
-        <a href={site.links.releases}>Check for a newer release</a>.
+        Installs the latest stable release from PyPI, currently
+        {' '}<strong>v{RELEASE.version}</strong>. Already installed? Run
+        {' '}<code>uv tool upgrade glyphpact</code>.
+        {' '}<a href={site.links.releases}>Release notes</a>.
       </p>
     )
   }

@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-const baseURL = 'http://127.0.0.1:4321';
+const baseURL = 'http://127.0.0.1:4322';
 
 export default defineConfig({
   testDir: './tests',
@@ -16,9 +16,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run preview -- --host 127.0.0.1 --port 4321',
+    command: 'npm run preview -- --host 127.0.0.1 --port 4322',
     url: `${baseURL}/glyphpact/`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 30_000,
   },
 });

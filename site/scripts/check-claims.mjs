@@ -55,9 +55,19 @@ if (!versionMatch) {
     }
   }
 
-  // The install command must pin the same version.
-  if (!configSource.includes('.git@${TAG}') && !configSource.includes(`.git@v${version}`)) {
-    failures.push('The install command does not appear to pin the advertised release tag.');
+  if (!configSource.includes("INSTALL_COMMAND = 'uv tool install glyphpact'")) {
+    failures.push('The public install command must be exactly "uv tool install glyphpact".');
+  }
+  if (configSource.includes('git+')) {
+    failures.push('The public install command must resolve from PyPI, not a Git repository.');
+  }
+
+  const flutterSource = readFileSync('src/pages/flutter.astro', 'utf8');
+  if (!flutterSource.includes('uv tool install glyphpact==${RELEASE.version}')) {
+    failures.push('The Flutter CI example must pin the advertised PyPI release.');
+  }
+  if (flutterSource.includes('git+')) {
+    failures.push('The Flutter CI example must install from PyPI, not a Git repository.');
   }
 }
 
@@ -180,6 +190,13 @@ if (!existsSync(DIST)) {
 } else {
   const files = walk(DIST);
   notes.push(`Scanned ${files.length} built HTML and text file(s) for unsupported claims.`);
+
+  for (const file of files) {
+    const raw = readFileSync(file, 'utf8');
+    if (raw.includes('uv tool install git+')) {
+      failures.push(`${file}: contains a legacy Git install command.`);
+    }
+  }
 
   /**
    * A character window around the match, rather than a sentence. Denials often
