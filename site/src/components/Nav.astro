@@ -18,7 +18,7 @@ const isCurrent = (href: string) => {
       {site.name}
     </a>
 
-    <nav class="gp-nav" aria-label="Main">
+    <nav class="gp-nav gp-nav--desktop" aria-label="Main">
       {
         navRoutes.map((key) => (
           <a
@@ -34,5 +34,31 @@ const isCurrent = (href: string) => {
         GitHub
       </a>
     </nav>
+
+    <details class="gp-mobile-nav">
+      <summary>
+        <span>Menu</span>
+        <span class="gp-mobile-nav__icon" aria-hidden="true">
+          <span></span>
+          <span></span>
+        </span>
+      </summary>
+      <nav class="gp-mobile-nav__panel" aria-label="Main">
+        {
+          navRoutes.map((key) => (
+            <a
+              href={path(routes[key].href)}
+              aria-current={isCurrent(routes[key].href) ? 'page' : undefined}
+            >
+              {routes[key].nav}
+            </a>
+          ))
+        }
+        <a class="gp-nav__repo" href={site.links.repo}>
+          <GitHubIcon />
+          GitHub
+        </a>
+      </nav>
+    </details>
   </div>
 </header>

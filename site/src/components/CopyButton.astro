@@ -19,7 +19,14 @@ interface Props {
 const { value, label } = Astro.props;
 ---
 
-<button type="button" class="gp-copy" data-gp-copy={value} aria-label={label}>
+<span class="gp-sr" role="status" aria-live="polite" aria-atomic="true" data-gp-copy-feedback></span>
+<button
+  type="button"
+  class="gp-copy"
+  data-gp-copy={value}
+  data-gp-copy-accessible-label={label}
+  aria-label={label}
+>
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
     <rect x="5.5" y="5.5" width="8" height="8" rx="1.5"></rect>
     <path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1"></path>

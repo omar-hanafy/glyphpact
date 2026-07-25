@@ -61,7 +61,7 @@ const fullTitle = title.includes(site.name) ? title : `${title} - ${site.name}`;
     <meta name="twitter:image:alt" content={`${title} - ${site.name}`} />
 
     <link rel="icon" href={path('/favicon.svg')} type="image/svg+xml" />
-    <link rel="apple-touch-icon" href={path('/favicon.svg')} />
+    <link rel="apple-touch-icon" sizes="180x180" href={path('/apple-touch-icon.png')} />
     <meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#fbfbfc" media="(prefers-color-scheme: light)" />
 
@@ -114,6 +114,8 @@ const fullTitle = title.includes(site.name) ? title : `${title} - ${site.name}`;
     {/* The site's only shipped script. Delegated, so one listener covers every
         copy control on the page regardless of how many there are. */}
     <script>
+      const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
+
       document.addEventListener('click', async (event) => {
         const target = event.target as Element | null;
         const button = target?.closest<HTMLButtonElement>('[data-gp-copy]');
@@ -121,22 +123,44 @@ const fullTitle = title.includes(site.name) ? title : `${title} - ${site.name}`;
 
         const value = button.dataset.gpCopy ?? '';
         const label = button.querySelector('[data-gp-copy-label]');
-        const original = label?.textContent ?? 'Copy';
+        const feedback = button.previousElementSibling?.matches('[data-gp-copy-feedback]')
+          ? button.previousElementSibling
+          : null;
+        const originalVisibleLabel = label?.textContent ?? 'Copy';
+        const originalAccessibleLabel =
+          button.dataset.gpCopyAccessibleLabel ?? button.getAttribute('aria-label') ?? 'Copy';
+        const copiedTarget =
+          originalAccessibleLabel.replace(/^Copy(?:\s+the)?\s*/i, '').trim() || 'content';
+
+        const pendingReset = copyResetTimers.get(button);
+        if (pendingReset) window.clearTimeout(pendingReset);
+        if (feedback) feedback.textContent = '';
 
         try {
           await navigator.clipboard.writeText(value);
           button.dataset.state = 'done';
           if (label) label.textContent = 'Copied';
+          button.setAttribute('aria-label', `Copied ${copiedTarget}`);
+          if (feedback) feedback.textContent = `Copied ${copiedTarget} to clipboard.`;
         } catch {
           // Permission denied or a non-secure context. Say so rather than
           // reporting a success that did not happen.
-          if (label) label.textContent = 'Press Ctrl+C';
+          button.dataset.state = 'error';
+          if (label) label.textContent = 'Copy failed';
+          button.setAttribute('aria-label', `Copy failed for ${copiedTarget}`);
+          if (feedback) {
+            feedback.textContent = `Could not copy ${copiedTarget}. Select it and copy it manually.`;
+          }
         }
 
-        window.setTimeout(() => {
+        const resetTimer = window.setTimeout(() => {
           delete button.dataset.state;
-          if (label) label.textContent = original;
+          button.setAttribute('aria-label', originalAccessibleLabel);
+          if (label) label.textContent = originalVisibleLabel;
+          if (feedback) feedback.textContent = '';
+          copyResetTimers.delete(button);
         }, 2000);
+        copyResetTimers.set(button, resetTimer);
       });
     </script>
   </body>
