@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brand/glyphpact-icon.svg" alt="" width="72" height="72">
+  <img src="https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/brand/glyphpact-icon.svg" alt="" width="72" height="72">
 </p>
 
 <h1 align="center">GlyphPact</h1>
@@ -13,7 +13,7 @@
   &middot;
   <a href="https://omar-hanafy.github.io/glyphpact/flutter/">Flutter guide</a>
   &middot;
-  <a href="CHANGELOG.md">Changelog</a>
+  <a href="https://github.com/omar-hanafy/glyphpact/blob/main/CHANGELOG.md">Changelog</a>
 </p>
 
 GlyphPact turns a directory of SVG files into a validated OpenType/CFF icon
@@ -365,7 +365,8 @@ uv run pytest
 uv build
 ```
 
-The marketing site is a separate static Astro project in [`site/`](site/),
+The marketing site is a separate static Astro project in
+[`site/`](https://github.com/omar-hanafy/glyphpact/tree/main/site),
 deployed to GitHub Pages by `.github/workflows/pages.yml`:
 
 ```bash
@@ -389,8 +390,10 @@ Configure `author`, `license`, `sourceUrl`, and `copyright` per icon when
 provenance matters. `ATTRIBUTION.md` carries supplied metadata for emitted
 glyphs and reports how many emitted icons have no declared provenance.
 
-Brand assets live in [`brand/`](brand/README.md), which is the single source of
-truth for the identity and documents how to replace it.
+Brand assets live in
+[`brand/`](https://github.com/omar-hanafy/glyphpact/blob/main/brand/README.md),
+which is the single source of truth for the identity and documents how to
+replace it.
 
 See the
 [changelog](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/CHANGELOG.md),

@@ -76,6 +76,37 @@ def test_release_versions_and_generated_surfaces_agree(tmp_path: Path) -> None:
     assert f"GlyphPact {__version__}" in dart
 
 
+def test_release_publication_is_tag_only_and_default_branch_contained() -> None:
+    project = Path(__file__).parents[1]
+    workflow = (project / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    assert 'tags: ["v*"]' in workflow
+    assert "workflow_dispatch:" not in workflow
+    assert "fetch-depth: 0" in workflow
+    assert 'git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${DEFAULT_BRANCH}"' in workflow
+    assert "github.event_name == 'push' && github.ref_type == 'tag'" in workflow
+    assert "attestations: true" in workflow
+
+
+def test_uv_and_release_tool_versions_are_pinned() -> None:
+    project = Path(__file__).parents[1]
+    pyproject = (project / "pyproject.toml").read_text(encoding="utf-8")
+    assert '[tool.uv]\nrequired-version = "==0.11.32"' in pyproject
+    assert '"check-jsonschema==0.37.4"' in pyproject
+    assert '"pip-audit==2.10.1"' in pyproject
+    assert '"twine==6.2.0"' in pyproject
+
+    setup_uses = 0
+    for workflow_path in sorted((project / ".github" / "workflows").glob("*.yml")):
+        workflow = workflow_path.read_text(encoding="utf-8")
+        for match in re.finditer(r"uses: astral-sh/setup-uv@(\S+)", workflow):
+            setup_uses += 1
+            assert re.fullmatch(r"[0-9a-f]{40}", match.group(1))
+            setup_block = workflow[match.start() : match.start() + 240]
+            assert 'version: "0.11.32"' in setup_block
+    assert setup_uses > 0
+
+
 def test_unicode_flutter_family_uses_portable_unique_cff_names(tmp_path: Path) -> None:
     inputs = _simple_input(tmp_path)
     first = build(
