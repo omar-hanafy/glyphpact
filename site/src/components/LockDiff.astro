@@ -1,0 +1,94 @@
+---
+import { lockDiff, type DiffLine } from '../data/product';
+
+/**
+ * The lock file diff.
+ *
+ * Colour is reinforcement, never the message. Added lines carry a literal `+`,
+ * and the fact that matters - `back` still holds 0xE000 - is stated in the
+ * caption and the surrounding prose, not left to a green background. The
+ * highlighted "hold" lines are unchanged context; they read identically to a
+ * screen reader and to anyone who cannot distinguish the tint.
+ */
+interface Props {
+  /** Rendered below the diff. Should state the conclusion in words. */
+  caption?: string;
+}
+const { caption } = Astro.props;
+
+const kindClass = (kind: DiffLine['kind']) =>
+  kind === 'add'
+    ? 'gp-diff__line--add'
+    : kind === 'del'
+      ? 'gp-diff__line--del'
+      : kind === 'meta' || kind === 'hunk'
+        ? 'gp-diff__line--meta'
+        : kind === 'hold'
+          ? 'gp-diff__line--hold gp-diff__hold-row'
+          : '';
+---
+
+<figure>
+  <div class="gp-diff">
+    <div class="gp-code__bar">
+      <span>iconfont.lock.json</span>
+      <span>git diff, after adding four icons</span>
+    </div>
+    <pre tabindex="0" aria-label="Diff of iconfont.lock.json after adding four icons to a two-icon pack"><code>{
+      lockDiff.map((line) => (
+        <span class:list={['gp-diff__line', kindClass(line.kind)]}>{line.text}</span>
+      ))
+    }</code></pre>
+  </div>
+
+  <div class="gp-diff__legend">
+    <span class="gp-diff__key gp-diff__key--add">+ added</span>
+    <span class="gp-diff__key gp-diff__key--hold">unchanged assignment</span>
+  </div>
+
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .gp-diff__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-block-start: 0.85rem;
+    font-family: var(--gp-font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .gp-diff__key {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .gp-diff__key::before {
+    content: '';
+    inline-size: 0.7rem;
+    block-size: 0.7rem;
+    border-radius: 2px;
+    flex: none;
+  }
+
+  .gp-diff__key--add::before {
+    background: var(--diff-add-bg);
+    border: 1px solid var(--diff-add-text);
+  }
+
+  .gp-diff__key--hold::before {
+    background: transparent;
+    border: 1px solid var(--accent);
+  }
+
+  /* Unchanged lines that carry the argument get a left marker rather than a
+     fill, so they never read as a modification. */
+  .gp-diff :global(.gp-diff__hold-row) {
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+</style>

@@ -1,0 +1,93 @@
+---
+import { policyMatrix } from '../data/product';
+
+/**
+ * The two-axis fidelity policy.
+ *
+ * A real table, not a grid of divs, because it is genuinely tabular data with
+ * two headers per cell. The default combination is marked in text as well as
+ * by weight, so the default is discoverable without seeing the styling.
+ */
+const byAxes = (lossy: string, unrep: string) =>
+  policyMatrix.find((row) => row.lossy === lossy && row.unrepresentable === unrep)!;
+
+const lossyValues = ['error', 'convert'] as const;
+const unrepValues = ['error', 'skip'] as const;
+---
+
+<div class="gp-table-wrap">
+  <table class="gp-policy">
+    <caption>
+      Both axes default to <code>error</code>. Each axis is independent, so the
+      four combinations are all reachable.
+    </caption>
+    <thead>
+      <tr>
+        <td></td>
+        {unrepValues.map((u) => <th scope="col">--unrepresentable {u}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {
+        lossyValues.map((l) => (
+          <tr>
+            <th scope="row">--lossy {l}</th>
+            {unrepValues.map((u) => {
+              const cell = byAxes(l, u);
+              return (
+                <td class={cell.isDefault ? 'gp-policy__default' : undefined}>
+                  <strong>{cell.result}</strong>
+                  {cell.isDefault && <em class="gp-policy__badge">default</em>}
+                  <small>{cell.detail}</small>
+                </td>
+              );
+            })}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .gp-policy {
+    min-width: 38rem;
+  }
+
+  .gp-policy thead th,
+  .gp-policy tbody th {
+    font-family: var(--gp-font-mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    white-space: nowrap;
+  }
+
+  .gp-policy tbody th {
+    color: var(--text-muted);
+    background: var(--bg-raised);
+  }
+
+  .gp-policy strong {
+    display: block;
+    font-weight: 600;
+  }
+
+  .gp-policy__default {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+  }
+
+  .gp-policy__badge {
+    display: inline-block;
+    margin-block-start: 0.3rem;
+    font-family: var(--gp-font-mono);
+    font-style: normal;
+    font-size: 0.66rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid currentcolor;
+    border-radius: 3px;
+    padding: 0.05rem 0.35rem;
+  }
+</style>

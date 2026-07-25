@@ -1,0 +1,114 @@
+---
+import type { Glyph } from '../data/glyphs';
+
+/**
+ * A row of glyph cells with their codepoints.
+ *
+ * Used to show a pack before and after icons are added. Each cell is an em
+ * square holding the real outline, with the source path and codepoint as live
+ * text underneath, so the mapping is legible to a reader, a crawler, and a
+ * screen reader alike. `hold` marks the assignments that did not move.
+ */
+interface Props {
+  label: string;
+  glyphs: Glyph[];
+  /** Codepoints to flag as unchanged from the previous state. */
+  hold?: string[];
+}
+
+const { label, glyphs, hold = [] } = Astro.props;
+---
+
+<div class="strip">
+  <p class="gp-annotation">{label}</p>
+  <ol class="strip__row">
+    {
+      glyphs.map((glyph) => {
+        const held = hold.includes(glyph.codepoint);
+        return (
+          <li class:list={['strip__cell', held && 'strip__cell--hold']}>
+            <div class="strip__square gp-emsquare">
+              <svg viewBox="0 0 24 24" role="img" aria-label={glyph.label}>
+                <path d={glyph.path} fill-rule={glyph.fillRule} />
+              </svg>
+            </div>
+            <code class="strip__code">{glyph.codepoint}</code>
+            <span class="strip__source">{glyph.source}</span>
+            {held && <span class="strip__held">unchanged</span>}
+          </li>
+        );
+      })
+    }
+  </ol>
+</div>
+
+<style>
+  .strip + :global(.strip) {
+    margin-block-start: 2.5rem;
+  }
+
+  .strip__row {
+    list-style: none;
+    padding: 0;
+    margin: 1.1rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+  }
+
+  .strip__cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    align-items: flex-start;
+    min-width: 7.5rem;
+  }
+
+  .strip__square {
+    inline-size: 4.5rem;
+    block-size: 4.5rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--gp-radius);
+    display: grid;
+    place-items: center;
+    background: var(--bg-sunken);
+  }
+
+  .strip__square svg {
+    inline-size: 2.1rem;
+    block-size: 2.1rem;
+    fill: var(--text);
+  }
+
+  .strip__cell--hold .strip__square {
+    border-color: var(--accent);
+  }
+
+  .strip__code {
+    font-family: var(--gp-font-mono);
+    font-size: 0.78rem;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--text);
+  }
+
+  .strip__cell--hold .strip__code {
+    color: var(--accent);
+  }
+
+  .strip__source {
+    font-family: var(--gp-font-mono);
+    font-size: 0.68rem;
+    color: var(--text-faint);
+    word-break: break-all;
+  }
+
+  .strip__held {
+    font-family: var(--gp-font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+</style>

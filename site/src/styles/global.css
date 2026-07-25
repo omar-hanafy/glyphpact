@@ -1,0 +1,1404 @@
+/* ==========================================================================
+   GlyphPact - precision drafting
+   --------------------------------------------------------------------------
+   The visual language of glyph construction: em squares, registration marks,
+   hairline rules, measured baselines, and marginal monospace annotation.
+   Colour carries meaning and nothing else - cyan is a locked codepoint,
+   amber is an approximation, red is rejected input. Nothing is tinted for
+   decoration.
+
+   Brand colours mirror brand/tokens.json. That file is the source of truth;
+   these custom properties are its only other home.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ fonts */
+/* Geist and Geist Mono, SIL Open Font License 1.1, self-hosted and subset to
+   Latin. Licence text ships at /fonts/OFL.txt. Variable weight axis means one
+   file covers every weight the site uses. */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-latin.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-mono-latin.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ----------------------------------------------------------------- tokens */
+
+:root {
+  /* Brand palette - see brand/tokens.json */
+  --gp-ink: #0b0d10;
+  --gp-paper: #e9ecf1;
+  --gp-accent: #22d3ee;
+  --gp-lossy: #f5a524;
+  --gp-fail: #f4635e;
+
+  /* Type */
+  --gp-font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --gp-font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Measure */
+  --gp-shell: 1100px;
+  --gp-prose: 68ch;
+  --gp-gutter: clamp(1.25rem, 5vw, 2.5rem);
+
+  /* Rhythm */
+  --gp-section-gap: clamp(4rem, 9vw, 7.5rem);
+
+  /* Radii - restrained; drafting is square */
+  --gp-radius: 4px;
+  --gp-radius-lg: 8px;
+
+  color-scheme: dark light;
+}
+
+/* Dark is the default canvas. */
+:root {
+  --bg: var(--gp-ink);
+  --bg-raised: #12151a;
+  --bg-sunken: #07090b;
+  --text: var(--gp-paper);
+  --text-muted: #9ba4b0;
+  --text-faint: #7d8695;
+  --accent: var(--gp-accent);
+  --accent-quiet: #0e3b45;
+  --lossy: var(--gp-lossy);
+  --fail: var(--gp-fail);
+  --ok: #4ade80;
+  --rule: rgb(233 236 241 / 12%);
+  --rule-strong: rgb(233 236 241 / 22%);
+  --grid: rgb(233 236 241 / 5%);
+  --diff-add-bg: rgb(74 222 128 / 10%);
+  --diff-add-text: #86efac;
+  --diff-del-bg: rgb(244 99 94 / 10%);
+  --diff-del-text: #fca5a5;
+  --shadow: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fbfbfc;
+    --bg-raised: #ffffff;
+    --bg-sunken: #f2f3f5;
+    --text: #0e1116;
+    --text-muted: #565e6b;
+    --text-faint: #666e7b;
+    --accent: #0e7490;
+    --accent-quiet: #d7f0f6;
+    --lossy: #8a4b00;
+    --fail: #b42318;
+    --ok: #15803d;
+    --rule: rgb(14 17 22 / 12%);
+    --rule-strong: rgb(14 17 22 / 22%);
+    --grid: rgb(14 17 22 / 6%);
+    --diff-add-bg: rgb(21 128 61 / 8%);
+    --diff-add-text: #14532d;
+    --diff-del-bg: rgb(180 35 24 / 8%);
+    --diff-del-text: #7f1d1d;
+    --shadow: 0 1px 2px rgb(14 17 22 / 8%);
+  }
+}
+
+/* The viewer's explicit toggle wins over the OS signal in both directions. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: var(--gp-ink);
+  --bg-raised: #12151a;
+  --bg-sunken: #07090b;
+  --text: var(--gp-paper);
+  --text-muted: #9ba4b0;
+  --text-faint: #7d8695;
+  --accent: var(--gp-accent);
+  --accent-quiet: #0e3b45;
+  --lossy: var(--gp-lossy);
+  --fail: var(--gp-fail);
+  --ok: #4ade80;
+  --rule: rgb(233 236 241 / 12%);
+  --rule-strong: rgb(233 236 241 / 22%);
+  --grid: rgb(233 236 241 / 5%);
+  --diff-add-bg: rgb(74 222 128 / 10%);
+  --diff-add-text: #86efac;
+  --diff-del-bg: rgb(244 99 94 / 10%);
+  --diff-del-text: #fca5a5;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #fbfbfc;
+  --bg-raised: #ffffff;
+  --bg-sunken: #f2f3f5;
+  --text: #0e1116;
+  --text-muted: #565e6b;
+  --text-faint: #666e7b;
+  --accent: #0e7490;
+  --accent-quiet: #d7f0f6;
+  --lossy: #8a4b00;
+  --fail: #b42318;
+  --ok: #15803d;
+  --rule: rgb(14 17 22 / 12%);
+  --rule-strong: rgb(14 17 22 / 22%);
+  --grid: rgb(14 17 22 / 6%);
+  --diff-add-bg: rgb(21 128 61 / 8%);
+  --diff-add-text: #14532d;
+  --diff-del-bg: rgb(180 35 24 / 8%);
+  --diff-del-text: #7f1d1d;
+}
+
+/* ------------------------------------------------------------------ reset */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ----------------------------------------------------- overflow discipline
+   Grid and flex items default to `min-width: auto`, so an item refuses to
+   shrink below the min-content width of its contents. A <pre> holding a long
+   command has a huge min-content width, which inflates its track, pushes past
+   the container, and scrolls the whole page sideways - even though the <pre>
+   itself has `overflow-x: auto`.
+
+   Every item that can contain code is therefore allowed to shrink, and the
+   scroll happens inside the code block where it belongs. The page body must
+   never scroll horizontally. */
+
+.gp-cell,
+.gp-boundary__side,
+.gp-hero__body,
+.gp-next a,
+.gp-code,
+.gp-diff,
+.gp-steps > li > div,
+.gp-matrix__cell,
+.gp-table-wrap {
+  min-width: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--gp-font-sans);
+  font-size: 1rem;
+  line-height: 1.65;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+img,
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ------------------------------------------------------------- typography */
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(2.1rem, 5.5vw, 3.5rem);
+  letter-spacing: -0.035em;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  letter-spacing: -0.028em;
+}
+
+h3 {
+  font-size: clamp(1.125rem, 2vw, 1.3rem);
+}
+
+h4 {
+  font-size: 1rem;
+}
+
+p,
+ul,
+ol,
+dl {
+  margin: 0;
+}
+
+a {
+  color: var(--text);
+  text-decoration-color: var(--rule-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  transition: text-decoration-color 120ms ease, color 120ms ease;
+}
+
+a:hover {
+  text-decoration-color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--gp-font-mono);
+  font-size: 0.875em;
+  font-feature-settings: 'tnum' 1;
+}
+
+:not(pre) > code {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  /* Deliberately wrappable. Identifiers like `--unrepresentable` and
+     `@staticIconProvider` appear mid-sentence, and forcing them onto one line
+     pushes surrounding text into strange breaks. */
+  overflow-wrap: break-word;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 0;
+}
+
+/* Available to assistive technology, absent from the visual layout. */
+.gp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Marginal monospace annotation - the drafting note in the margin. */
+.gp-annotation {
+  font-family: var(--gp-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.gp-annotation::before {
+  content: '';
+  inline-size: 1.25rem;
+  block-size: 1px;
+  background: var(--rule-strong);
+  flex: none;
+}
+
+/* --------------------------------------------------------------- skip link */
+
+.gp-skip {
+  position: absolute;
+  inset-inline-start: 0.5rem;
+  inset-block-start: -100%;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--accent);
+  border-radius: var(--gp-radius);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.gp-skip:focus {
+  inset-block-start: 0.5rem;
+}
+
+/* ----------------------------------------------------------------- layout */
+
+.gp-shell {
+  width: 100%;
+  max-width: var(--gp-shell);
+  margin-inline: auto;
+  padding-inline: var(--gp-gutter);
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+.gp-section {
+  padding-block: var(--gp-section-gap);
+  border-top: 1px solid var(--rule);
+}
+
+.gp-section--flush {
+  border-top: 0;
+}
+
+.gp-prose {
+  max-width: var(--gp-prose);
+}
+
+.gp-prose > * + * {
+  margin-block-start: 1.1em;
+}
+
+.gp-prose h2 {
+  margin-block-start: 2.4em;
+}
+
+.gp-prose h3 {
+  margin-block-start: 1.8em;
+}
+
+.gp-prose ul,
+.gp-prose ol {
+  padding-inline-start: 1.3rem;
+}
+
+.gp-prose li + li {
+  margin-block-start: 0.4em;
+}
+
+.gp-lede {
+  font-size: clamp(1.06rem, 1.9vw, 1.28rem);
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+
+.gp-muted {
+  color: var(--text-muted);
+}
+
+.gp-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+/* Section heading with its drafting annotation above it. */
+.gp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-block-end: 2.5rem;
+  max-width: 62ch;
+}
+
+/* ------------------------------------------------------------------- nav */
+
+.gp-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-block-end: 1px solid var(--rule);
+}
+
+.gp-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 4rem;
+  flex-wrap: wrap;
+}
+
+.gp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: 1.02rem;
+  flex: none;
+}
+
+.gp-brand svg {
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+  flex: none;
+}
+
+.gp-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem 1.15rem;
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+  font-size: 0.9rem;
+}
+
+.gp-nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  padding-block: 0.35rem;
+  border-block-end: 1px solid transparent;
+}
+
+.gp-nav a:hover {
+  color: var(--text);
+}
+
+.gp-nav a[aria-current='page'] {
+  color: var(--text);
+  border-block-end-color: var(--accent);
+}
+
+.gp-nav__repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gp-nav__repo svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+/* ---------------------------------------------------------------- footer */
+
+.gp-footer {
+  border-block-start: 1px solid var(--rule);
+  padding-block: 3rem;
+  margin-block-start: var(--gp-section-gap);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.gp-footer__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.gp-footer h2 {
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-block-end: 0.9rem;
+}
+
+.gp-footer ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gp-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.gp-footer a:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+}
+
+.gp-footer__base {
+  margin-block-start: 2.5rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+
+/* These links sit inside running text rather than a link list, so colour alone
+   cannot distinguish them: the contrast against the surrounding sentence is far
+   below the 3:1 that would allow it. They stay underlined. */
+.gp-footer__base a {
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 0.2em;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.gp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.gp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--gp-radius);
+  border: 1px solid var(--rule-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.gp-btn:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.gp-btn--primary {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  font-weight: 600;
+}
+
+.gp-btn--primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--gp-ink);
+}
+
+.gp-btn svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+}
+
+/* ------------------------------------------------------------ code blocks */
+
+.gp-code {
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+/* Titles are real commands and filenames, so they can be long. The bar wraps
+   and the title breaks rather than pushing the block past its container. */
+.gp-code__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  padding: 0.55rem 0.9rem;
+  border-block-end: 1px solid var(--rule);
+  background: var(--bg-raised);
+  font-family: var(--gp-font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.gp-code__bar > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.gp-code__bar > :last-child {
+  margin-inline-start: auto;
+}
+
+.gp-code pre {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  line-height: 1.65;
+  tab-size: 2;
+}
+
+.gp-code pre code {
+  font-size: 0.82rem;
+}
+
+/* Install command - the one interactive element on the site. */
+.gp-install {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--gp-radius-lg);
+  background: var(--bg-sunken);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* The command wraps rather than scrolling out of sight. A truncated install
+   command is worse than a two-line one, and anyone copying by hand needs to
+   read all of it. */
+.gp-install__cmd {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  font-family: var(--gp-font-mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+/* The whole block already reads as a terminal, so the inline-code chrome would
+   be a box inside a box. */
+.gp-install__cmd code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+.gp-install__prompt {
+  color: var(--accent);
+  user-select: none;
+  flex: none;
+}
+
+/* Hidden until the head script confirms the Clipboard API exists. That flag is
+   set before the body is parsed, so this is never a visible change. Only
+   `display` is elevated in specificity; every other property stays at class
+   level so component-scoped overrides still win. */
+.gp-copy {
+  display: none;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  padding-inline: 0.9rem;
+  border: 0;
+  border-inline-start: 1px solid var(--rule);
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+:root[data-clipboard='ready'] .gp-copy {
+  display: inline-flex;
+}
+
+.gp-copy:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-raised));
+}
+
+.gp-copy svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
+.gp-copy[data-state='done'] {
+  color: var(--ok);
+}
+
+/* ------------------------------------------------------------------ cards */
+
+.gp-grid {
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  overflow: hidden;
+}
+
+.gp-grid--3 {
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.gp-grid--2 {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.gp-cell {
+  background: var(--bg);
+  padding: 1.6rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.gp-cell h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.gp-cell p {
+  color: var(--text-muted);
+  font-size: 0.94rem;
+}
+
+/* A failure-mode card keys off its state colour. */
+.gp-cell__tag {
+  font-family: var(--gp-font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid currentcolor;
+  flex: none;
+}
+
+.gp-state-fail {
+  color: var(--fail);
+}
+
+.gp-state-lossy {
+  color: var(--lossy);
+}
+
+.gp-state-ok {
+  color: var(--ok);
+}
+
+.gp-state-locked {
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ table */
+
+.gp-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  /* The table must scroll inside its own box, never the page. */
+  max-width: 100%;
+  /* `overflow-x: auto` alone is not enough: a table wider than this wrapper
+     still contributes its full width to the document's scrollable overflow,
+     which put a horizontal scrollbar on the whole page at narrow widths.
+     `contain: paint` guarantees descendants neither paint nor scroll outside
+     this box. Verified at 320, 375, 768, 1024, and 1440px. */
+  contain: paint;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+  min-width: 44rem;
+}
+
+caption {
+  text-align: start;
+  padding: 0.9rem 1rem;
+  border-block-end: 1px solid var(--rule);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  background: var(--bg-raised);
+}
+
+th,
+td {
+  text-align: start;
+  padding: 0.7rem 1rem;
+  border-block-end: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+/* Not sticky, on purpose. A sticky header cell inside a horizontally scrolling
+   wrapper is positioned against the document's vertical scrollport rather than
+   the wrapper, so it escapes the wrapper's clipping and adds the table's full
+   width to the page's scroll extent - a horizontal scrollbar on the whole site
+   at narrow widths. These tables are also short enough that a sticky header
+   would earn little, and the site header is already sticky at the top. */
+thead th {
+  background: var(--bg-raised);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+tbody th {
+  font-weight: 500;
+  color: var(--text);
+}
+
+tbody tr:last-child th,
+tbody tr:last-child td {
+  border-block-end: 0;
+}
+
+td small {
+  display: block;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  margin-block-start: 0.25rem;
+  line-height: 1.45;
+}
+
+/* The GlyphPact column gets a quiet lane so the eye can find it. */
+.gp-col-self {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+/* ------------------------------------------------------------------- diff */
+
+.gp-diff {
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.gp-diff pre {
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+}
+
+.gp-diff code {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.75;
+  padding-block: 0.75rem;
+  min-width: max-content;
+}
+
+.gp-diff__line {
+  display: block;
+  padding-inline: 1rem;
+  white-space: pre;
+}
+
+.gp-diff__line--add {
+  background: var(--diff-add-bg);
+  color: var(--diff-add-text);
+}
+
+.gp-diff__line--del {
+  background: var(--diff-del-bg);
+  color: var(--diff-del-text);
+}
+
+.gp-diff__line--meta {
+  color: var(--text-faint);
+}
+
+.gp-diff__line--hold {
+  color: var(--text);
+}
+
+/* The callout marking an assignment that did not move. */
+.gp-diff__hold {
+  color: var(--accent);
+  font-style: normal;
+}
+
+/* --------------------------------------------------------------- fidelity */
+
+.gp-matrix {
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  overflow: hidden;
+  grid-template-columns: auto repeat(2, minmax(0, 1fr));
+}
+
+.gp-matrix__cell {
+  background: var(--bg);
+  padding: 1rem 1.1rem;
+  font-size: 0.88rem;
+}
+
+.gp-matrix__cell--head {
+  background: var(--bg-raised);
+  font-family: var(--gp-font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.gp-matrix__result {
+  display: block;
+  font-weight: 500;
+  color: var(--text);
+  margin-block-end: 0.3rem;
+}
+
+.gp-matrix__cell p {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 46rem) {
+  .gp-matrix {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gp-matrix__cell--head:first-child {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------- em square */
+
+/* Faint em-square grid, used only where geometry is the subject. */
+.gp-emsquare {
+  --cell: 12.5%;
+
+  position: relative;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: var(--cell) var(--cell);
+}
+
+/* ------------------------------------------------------------------- FAQ */
+
+.gp-faq {
+  border-block-start: 1px solid var(--rule);
+}
+
+.gp-faq__item {
+  border-block-end: 1px solid var(--rule);
+  padding-block: 1.6rem;
+}
+
+.gp-faq__item h3 {
+  margin-block-end: 0.7rem;
+  letter-spacing: -0.02em;
+}
+
+.gp-faq__item p {
+  color: var(--text-muted);
+  max-width: var(--gp-prose);
+}
+
+.gp-faq__item p + p {
+  margin-block-start: 0.8em;
+}
+
+/* --------------------------------------------------------------- artifacts */
+
+.gp-tree {
+  font-family: var(--gp-font-mono);
+  font-size: 0.8rem;
+  line-height: 1.9;
+  margin: 0;
+  padding: 1.1rem 1.2rem;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  background: var(--bg-sunken);
+}
+
+.gp-tree__row {
+  display: grid;
+  grid-template-columns: minmax(14rem, auto) 1fr;
+  gap: 1.5rem;
+  white-space: nowrap;
+}
+
+.gp-tree__note {
+  color: var(--text-faint);
+  white-space: normal;
+}
+
+.gp-tree__universal {
+  color: var(--accent);
+}
+
+@media (max-width: 40rem) {
+  .gp-tree__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    white-space: normal;
+  }
+
+  .gp-tree__row + .gp-tree__row {
+    margin-block-start: 0.6rem;
+  }
+}
+
+/* ------------------------------------------------------------------ steps */
+
+.gp-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  counter-reset: step;
+}
+
+.gp-steps > li {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: 1.2rem;
+  counter-increment: step;
+}
+
+.gp-steps > li::before {
+  content: counter(step);
+  font-family: var(--gp-font-mono);
+  font-size: 0.8rem;
+  inline-size: 2rem;
+  block-size: 2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  flex: none;
+}
+
+.gp-steps h3 {
+  margin-block-end: 0.5rem;
+}
+
+.gp-steps p {
+  color: var(--text-muted);
+  max-width: 60ch;
+}
+
+.gp-steps > li > div > * + * {
+  margin-block-start: 0.9rem;
+}
+
+/* --------------------------------------------------------------- callout */
+
+.gp-note {
+  border-inline-start: 2px solid var(--accent);
+  padding: 0.2rem 0 0.2rem 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+  max-width: var(--gp-prose);
+}
+
+.gp-note strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.gp-note--lossy {
+  border-inline-start-color: var(--lossy);
+}
+
+.gp-note--fail {
+  border-inline-start-color: var(--fail);
+}
+
+/* ------------------------------------------------------------- boundary */
+
+/* The universal-vs-Flutter split. Load-bearing honesty, so it gets weight. */
+.gp-boundary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  overflow: hidden;
+}
+
+.gp-boundary__side {
+  background: var(--bg);
+  padding: 1.6rem 1.5rem;
+}
+
+.gp-boundary__side h3 {
+  margin-block-end: 0.35rem;
+}
+
+.gp-boundary__kind {
+  font-family: var(--gp-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-block-end: 0.8rem;
+}
+
+.gp-boundary__side--scoped .gp-boundary__kind {
+  color: var(--text-faint);
+}
+
+.gp-boundary__side ul {
+  list-style: none;
+  padding: 0;
+  margin-block-start: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* An absolutely positioned marker, not a flex child. A flex list item turns
+   mixed inline content - text plus an inline <code> - into separate flex
+   items, which reorders and re-wraps the sentence. */
+.gp-boundary__side li {
+  position: relative;
+  padding-inline-start: 1.15rem;
+}
+
+.gp-boundary__side li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0.5em;
+  inline-size: 5px;
+  block-size: 5px;
+  border-radius: 1px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
+.gp-boundary__side--scoped li::before {
+  background: var(--text-faint);
+}
+
+/* -------------------------------------------------------------- hero */
+
+.gp-hero {
+  padding-block: clamp(3.5rem, 9vw, 7rem) var(--gp-section-gap);
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 4rem);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+
+@media (min-width: 62rem) {
+  .gp-hero {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+}
+
+.gp-hero__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  align-items: flex-start;
+}
+
+.gp-hero h1 {
+  max-width: 20ch;
+}
+
+.gp-hero__figure {
+  display: flex;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------- pill row */
+
+.gp-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  font-family: var(--gp-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+
+.gp-pills li {
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------- figures */
+
+figure {
+  margin: 0;
+}
+
+figcaption {
+  margin-block-start: 0.8rem;
+  font-size: 0.85rem;
+  color: var(--text-faint);
+  max-width: 62ch;
+}
+
+/* --------------------------------------------------------- next / crosslink */
+
+.gp-next {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius-lg);
+  overflow: hidden;
+}
+
+.gp-next a {
+  background: var(--bg);
+  padding: 1.4rem 1.5rem;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: background-color 120ms ease;
+}
+
+.gp-next a:hover {
+  background: var(--bg-raised);
+}
+
+.gp-next strong {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.gp-next span {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.gp-next svg {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------ breadcrumbs */
+
+.gp-crumbs {
+  padding-block-start: 1.75rem;
+  font-size: 0.84rem;
+  color: var(--text-faint);
+}
+
+.gp-crumbs ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.gp-crumbs li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.gp-crumbs li + li::before {
+  content: '/';
+  color: var(--rule-strong);
+}
+
+.gp-crumbs a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.gp-crumbs a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------- 404 */
+
+.gp-404 {
+  padding-block: clamp(4rem, 12vw, 9rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  align-items: flex-start;
+  max-width: 60ch;
+}
+
+/* ------------------------------------------------------------- verified */
+
+.gp-verified {
+  font-family: var(--gp-font-mono);
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+
+.gp-verified strong {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Source lists carry bare URLs as link text; they must break rather than
+   widen the page. */
+.gp-verified a,
+.gp-verified span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

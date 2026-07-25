@@ -1,0 +1,28 @@
+---
+/**
+ * Copy control.
+ *
+ * Progressive enhancement without layout shift. The button is hidden by CSS
+ * unless `<html>` carries `data-clipboard`, which a two-line inline script in
+ * the document head sets before the body is parsed - so the button is either
+ * present from the first paint or never present at all. Nothing moves.
+ *
+ * Where the Clipboard API is missing, the button simply does not appear and the
+ * command stays visible, selectable text. That is the whole fallback.
+ */
+interface Props {
+  /** Exact text placed on the clipboard. */
+  value: string;
+  /** Accessible name; the visible label is short by design. */
+  label: string;
+}
+const { value, label } = Astro.props;
+---
+
+<button type="button" class="gp-copy" data-gp-copy={value} aria-label={label}>
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+    <rect x="5.5" y="5.5" width="8" height="8" rx="1.5"></rect>
+    <path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1"></path>
+  </svg>
+  <span data-gp-copy-label>Copy</span>
+</button>

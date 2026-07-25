@@ -1,0 +1,48 @@
+---
+/**
+ * The GlyphPact identity mark.
+ *
+ * The artwork is inlined verbatim from brand/glyphpact-mark.svg and sized with
+ * CSS rather than attributes, so a rebrand needs no change here. The mark is
+ * always decorative: every place it appears is already labelled by adjacent
+ * text or by the surrounding link, so the wrapper is aria-hidden.
+ */
+import { markSvg } from '../lib/brand';
+
+interface Props {
+  /** `two-tone` paints the node with the accent; `mono` inherits text colour. */
+  tone?: 'mono' | 'two-tone';
+  /** CSS size applied to both axes. */
+  size?: string;
+  class?: string;
+}
+
+const { tone = 'two-tone', size, class: className } = Astro.props;
+---
+
+<span
+  class:list={['gp-mark', `gp-mark--${tone}`, className]}
+  style={size ? `--mark-size: ${size}` : undefined}
+  aria-hidden="true"
+  set:html={markSvg}
+/>
+
+<style>
+  .gp-mark {
+    display: inline-flex;
+    inline-size: var(--mark-size, 1.5rem);
+    block-size: var(--mark-size, 1.5rem);
+    flex: none;
+  }
+
+  .gp-mark :global(svg) {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  /* The one hook a two-tone treatment needs. If a replacement mark drops the
+     class, this rule stops applying and the mark degrades to mono. */
+  .gp-mark--two-tone :global(.gp-mark__node) {
+    fill: var(--accent);
+  }
+</style>

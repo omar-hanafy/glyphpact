@@ -1,0 +1,33 @@
+{
+  "name": "glyphpact-site",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Public marketing site for GlyphPact.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "check:brand": "node scripts/check-brand.mjs",
+    "check:claims": "node scripts/check-claims.mjs",
+    "check:links": "node scripts/check-links.mjs",
+    "check:links:external": "node scripts/check-links.mjs --external",
+    "// verify": "check:claims and check:links read dist/, so they must follow the build",
+    "verify": "npm run check && npm run check:brand && npm run build && npm run check:claims && npm run check:links"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^7.1.3",
+    "satori": "^0.29.0",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "typescript": "^5.9.3"
+  }
+}

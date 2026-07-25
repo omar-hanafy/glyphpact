@@ -1,0 +1,62 @@
+---
+import { path, routes, type RouteKey } from '../site.config';
+
+/**
+ * Cross-page links.
+ *
+ * Link text names the destination and what it answers. No "learn more" - a
+ * crawler, an answer engine, and anyone tabbing through links all deserve to
+ * know where a link goes before following it.
+ */
+interface Props {
+  /** Route keys to link to, plus optional custom entries. */
+  keys?: RouteKey[];
+  extra?: { href: string; title: string; blurb: string; external?: boolean }[];
+  heading?: string;
+}
+
+const { keys = [], extra = [], heading } = Astro.props;
+
+const items = [
+  ...keys.map((key) => ({
+    href: path(routes[key].href),
+    title: routes[key].nav,
+    blurb: routes[key].description,
+    external: false,
+  })),
+  ...extra.map((e) => ({
+    href: e.external ? e.href : path(e.href),
+    title: e.title,
+    blurb: e.blurb,
+    external: e.external ?? false,
+  })),
+];
+---
+
+<section class="gp-section" aria-labelledby={heading ? 'next-heading' : undefined}>
+  <div class="gp-shell">
+    {
+      heading && (
+        <div class="gp-head">
+          <p class="gp-annotation">Keep reading</p>
+          <h2 id="next-heading">{heading}</h2>
+        </div>
+      )
+    }
+    <div class="gp-next">
+      {
+        items.map((item) => (
+          <a href={item.href}>
+            <strong>
+              {item.title}
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5" />
+              </svg>
+            </strong>
+            <span>{item.blurb}</span>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

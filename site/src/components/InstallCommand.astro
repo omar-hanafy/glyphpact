@@ -1,0 +1,72 @@
+---
+import { INSTALL_COMMAND, RELEASE, site } from '../site.config';
+import CopyButton from './CopyButton.astro';
+
+interface Props {
+  command?: string;
+  /** Screen-reader description of what the command does. */
+  label?: string;
+  /**
+   * Explain the pinned tag. Worth showing wherever the install command is the
+   * primary call to action, and worth omitting when it appears a second time on
+   * the same page.
+   */
+  explainPin?: boolean;
+}
+
+const {
+  command = INSTALL_COMMAND,
+  label = 'Copy the install command',
+  explainPin = false,
+} = Astro.props;
+---
+
+<div class="gp-install-group">
+  <div class="gp-install">
+    {/* The prompt is presentational; excluding it keeps it off the clipboard
+        and out of the accessible name. */}
+    <div class="gp-install__cmd">
+      <span class="gp-install__prompt" aria-hidden="true">$</span>
+      <code>{command}</code>
+    </div>
+    <CopyButton value={command} label={label} />
+  </div>
+
+  {
+    explainPin && (
+      <p class="gp-install__pin">
+        Pinned to <strong>v{RELEASE.version}</strong>, the current release.
+        Dropping the tag installs the <code>main</code> branch rather than a
+        release, so the pin is deliberate.
+        {' '}
+        <a href={site.links.releases}>Check for a newer release</a>.
+      </p>
+    )
+  }
+</div>
+
+<style>
+  .gp-install-group {
+    width: 100%;
+  }
+
+  .gp-install__pin {
+    margin-block-start: 0.7rem;
+    font-size: 0.82rem;
+    color: var(--text-faint);
+    max-width: 52ch;
+  }
+
+  .gp-install__pin strong {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .gp-install__pin code {
+    font-size: 0.9em;
+  }
+
+  .gp-install__pin a {
+    color: var(--text-muted);
+  }
+</style>

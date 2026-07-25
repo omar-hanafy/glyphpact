@@ -1,0 +1,25 @@
+---
+import { path } from '../site.config';
+import type { Crumb } from '../lib/schema';
+
+interface Props {
+  crumbs: Crumb[];
+}
+const { crumbs } = Astro.props;
+---
+
+<nav class="gp-crumbs gp-shell" aria-label="Breadcrumb">
+  <ol>
+    {
+      crumbs.map((crumb) => (
+        <li>
+          {crumb.href ? (
+            <a href={path(crumb.href)}>{crumb.name}</a>
+          ) : (
+            <span aria-current="page">{crumb.name}</span>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
