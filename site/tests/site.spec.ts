@@ -77,16 +77,16 @@ test('machine-readable release facts match v1.0.1', async ({ page }) => {
   expect(JSON.stringify(schemas)).toContain('"softwareVersion":"1.0.1"');
 });
 
-test('support is easy to find without an embedded solicitation', async ({ page }) => {
+test('donation link is explicit without an embedded solicitation', async ({ page }) => {
   const supportUrl = 'https://buymeacoffee.com/omar.hanafy';
   await page.goto('/glyphpact/');
 
   const headerSupport = page
     .locator('.gp-header')
-    .getByRole('link', { name: 'Support', exact: true });
+    .getByRole('link', { name: 'Buy me a coffee', exact: true });
   const footerSupport = page
     .locator('.gp-footer')
-    .getByRole('link', { name: 'Support GlyphPact', exact: true });
+    .getByRole('link', { name: 'Buy me a coffee', exact: true });
   await expect(headerSupport).toHaveAttribute('href', supportUrl);
   await expect(footerSupport).toHaveAttribute('href', supportUrl);
   // Desktop and mobile navigation both exist in the DOM; only one is visible.
@@ -98,14 +98,14 @@ test('support is easy to find without an embedded solicitation', async ({ page }
   ).toHaveCount(0);
 });
 
-test('support remains visible in the mobile menu', async ({ page }) => {
+test('donation link remains visible in the mobile menu', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto('/glyphpact/');
   await page.locator('.gp-mobile-nav summary').click();
 
   const support = page
     .locator('.gp-mobile-nav__panel')
-    .getByRole('link', { name: 'Support', exact: true });
+    .getByRole('link', { name: 'Buy me a coffee', exact: true });
   await expect(support).toBeVisible();
   await expect(support).toHaveAttribute('href', 'https://buymeacoffee.com/omar.hanafy');
 });

@@ -1,6 +1,7 @@
 ---
 import { site, path, routes, navRoutes } from '../site.config';
 import BrandMark from './BrandMark.astro';
+import CoffeeIcon from './CoffeeIcon.astro';
 import GitHubIcon from './GitHubIcon.astro';
 
 /** Trailing slashes are normalised so `aria-current` survives either form. */
@@ -29,8 +30,11 @@ const isCurrent = (href: string) => {
           </a>
         ))
       }
-      <a href={site.links.support}>Support</a>
-      <a class="gp-nav__repo" href={site.links.repo}>
+      <a class="gp-nav__utility gp-nav__coffee" href={site.links.support}>
+        <CoffeeIcon />
+        Buy me a coffee
+      </a>
+      <a class="gp-nav__utility" href={site.links.repo}>
         <GitHubIcon />
         GitHub
       </a>
@@ -55,8 +59,11 @@ const isCurrent = (href: string) => {
             </a>
           ))
         }
-        <a href={site.links.support}>Support</a>
-        <a class="gp-nav__repo" href={site.links.repo}>
+        <a class="gp-nav__utility gp-nav__coffee" href={site.links.support}>
+          <CoffeeIcon />
+          Buy me a coffee
+        </a>
+        <a class="gp-nav__utility" href={site.links.repo}>
           <GitHubIcon />
           GitHub
         </a>
