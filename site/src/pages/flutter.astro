@@ -6,6 +6,7 @@ import CodeBlock from '../components/CodeBlock.astro';
 import InstallCommand from '../components/InstallCommand.astro';
 import ArtifactTree from '../components/ArtifactTree.astro';
 import NextLinks from '../components/NextLinks.astro';
+import SignalDiagram from '../components/SignalDiagram.astro';
 import { site, path, routes, RELEASE } from '../site.config';
 import { capacity, requirements } from '../data/product';
 import { articleSchema, breadcrumbSchema, faqSchema } from '../lib/schema';
@@ -142,28 +143,45 @@ jobs:
 
 const gitignore = `# GlyphPact leaves this coordination file beside the output directory.
 lib/generated/.app_icons.glyphpact.lock`;
+
+const flutterFlow = [
+  {
+    label: 'Repository contract',
+    tone: 'locked' as const,
+    nodes: ['SVG sources', 'OpenType font', 'iconfont.lock', 'const IconData'],
+    meta: 'Same inputs. Same codepoints. Reviewable output.',
+  },
+];
 ---
 
 <Base title={r.title} description={r.description} canonical={r.href} ogSlug="flutter" jsonLd={jsonLd}>
   <Breadcrumbs crumbs={crumbs} />
 
-  <article>
-    <header class="gp-shell gp-pagehead">
-      <p class="gp-annotation">Flutter integration</p>
-      <h1>Custom Flutter icons that keep their codepoints</h1>
-      <p class="gp-lede">
-        GlyphPact compiles an SVG directory into an OpenType font plus a
-        tree-shakeable <code>const IconData</code> class, and records every
-        codepoint in a file you commit. Adding icons later does not renumber the
-        ones your widgets already reference.
-      </p>
-      <div class="gp-pills-wrap">
-        <ul class="gp-pills">
-          <li>{requirements.python}</li>
-          <li>{requirements.dart}</li>
-          <li>No Node toolchain</li>
-        </ul>
+  <article class="gp-secondary">
+    <header class="gp-shell gp-secondary-hero">
+      <div class="gp-secondary-hero__body">
+        <p class="gp-annotation">Flutter integration</p>
+        <h1>Custom Flutter icons that keep their codepoints</h1>
+        <p class="gp-lede">
+          GlyphPact compiles an SVG directory into an OpenType font plus a
+          tree-shakeable <code>const IconData</code> class, and records every
+          codepoint in a file you commit. Adding icons later does not renumber the
+          ones your widgets already reference.
+        </p>
+        <div class="gp-pills-wrap">
+          <ul class="gp-pills">
+            <li>{requirements.python}</li>
+            <li>{requirements.dart}</li>
+            <li>No Node toolchain</li>
+          </ul>
+        </div>
       </div>
+
+      <SignalDiagram
+        caption="Compile pipeline"
+        title="Flutter-ready output"
+        lanes={flutterFlow}
+      />
     </header>
 
     <section class="gp-section" aria-labelledby="quickstart">
@@ -173,7 +191,7 @@ lib/generated/.app_icons.glyphpact.lock`;
           <h2 id="quickstart">From a directory of SVGs to a working Icon widget</h2>
         </div>
 
-        <ol class="gp-steps">
+        <ol class="gp-steps gp-steps--compact">
           <li>
             <div>
               <h3>Install GlyphPact</h3>
@@ -222,7 +240,7 @@ lib/generated/.app_icons.glyphpact.lock`;
     </section>
 
     <section class="gp-section" aria-labelledby="generated">
-      <div class="gp-shell">
+      <div class="gp-shell gp-feature-split">
         <div class="gp-head">
           <p class="gp-annotation">Generated Dart</p>
           <h2 id="generated">What the provider looks like</h2>
@@ -232,7 +250,7 @@ lib/generated/.app_icons.glyphpact.lock`;
             licence you declared for it.
           </p>
         </div>
-        <div style="max-width: 46rem">
+        <div>
           <CodeBlock title="lib/generated/app_icons/app_icons.dart" copy={generated}>
             {generated}
           </CodeBlock>
@@ -452,14 +470,6 @@ lib/generated/.app_icons.glyphpact.lock`;
 </Base>
 
 <style>
-  .gp-pagehead {
-    padding-block: 2.5rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-    max-width: 46rem;
-  }
-
   .gp-pills-wrap {
     margin-block-start: 0.3rem;
   }
@@ -481,26 +491,36 @@ lib/generated/.app_icons.glyphpact.lock`;
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-    max-width: 52rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    border-block-start: 1px solid var(--rule);
   }
 
   .gp-linklist li {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding-block-end: 1.1rem;
+    gap: 0.4rem;
+    padding: 1.4rem;
     border-block-end: 1px solid var(--rule);
   }
 
-  .gp-linklist li:last-child {
-    border-block-end: 0;
+  .gp-linklist li:nth-child(odd) {
+    border-inline-end: 1px solid var(--rule);
   }
 
   .gp-linklist span {
     color: var(--text-muted);
     font-size: 0.92rem;
+  }
+
+  @media (max-width: 42rem) {
+    .gp-linklist {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gp-linklist li:nth-child(odd) {
+      border-inline-end: 0;
+    }
   }
 </style>

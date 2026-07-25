@@ -434,6 +434,178 @@ main {
   max-width: 62ch;
 }
 
+/* ------------------------------------------------------ secondary articles
+   Documentation and comparison pages read like an engineering field manual:
+   one clear decision in the first viewport, then dense evidence with headings
+   held in the left rail. The home page keeps its wider campaign rhythm. */
+
+.gp-secondary .gp-section {
+  padding-block: clamp(3.75rem, 7vw, 6rem);
+}
+
+.gp-secondary-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(28rem, 1.1fr);
+  gap: clamp(2.5rem, 6vw, 5rem);
+  align-items: center;
+  padding-block: clamp(2.5rem, 6vw, 5rem);
+}
+
+.gp-secondary-hero__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.1rem;
+}
+
+.gp-secondary-hero__body h1 {
+  max-width: 15ch;
+}
+
+.gp-secondary-hero__body .gp-lede {
+  max-width: 55ch;
+}
+
+.gp-secondary .gp-steps--compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-block-start: 1px solid var(--rule);
+}
+
+.gp-secondary .gp-steps--compact > li {
+  min-width: 0;
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border-block-end: 1px solid var(--rule);
+}
+
+.gp-secondary .gp-steps--compact > li:nth-child(odd) {
+  border-inline-end: 1px solid var(--rule);
+}
+
+.gp-secondary .gp-feature-split {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.68fr) minmax(0, 1.32fr);
+  gap: clamp(2.5rem, 6vw, 5rem);
+  align-items: start;
+}
+
+.gp-secondary .gp-feature-split .gp-head {
+  margin: 0;
+}
+
+.gp-secondary .gp-decision-grid .gp-cell {
+  position: relative;
+  padding-block-start: 2.2rem;
+}
+
+.gp-secondary .gp-decision-grid .gp-cell::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 2rem;
+  block-size: 2px;
+  background: var(--accent);
+}
+
+.gp-secondary .gp-decision-grid .gp-cell:first-child::before {
+  background: var(--lossy);
+}
+
+.gp-secondary .gp-try-band {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.7fr) minmax(0, 1.3fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+.gp-secondary .gp-try-band .gp-head {
+  margin: 0;
+}
+
+.gp-secondary .gp-try-band__body {
+  min-width: 0;
+}
+
+@media (min-width: 54rem) {
+  .gp-secondary .gp-prose:has(> h2) {
+    max-width: var(--gp-shell);
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.62fr) minmax(0, 1.38fr);
+    column-gap: clamp(2.5rem, 6vw, 5rem);
+    align-items: start;
+  }
+
+  .gp-secondary .gp-prose:has(> h2) > h2 {
+    grid-column: 1;
+    grid-row: 1 / span 99;
+    margin: 0;
+    position: sticky;
+    inset-block-start: 6.25rem;
+  }
+
+  .gp-secondary .gp-prose:has(> h2) > :not(h2) {
+    grid-column: 2;
+  }
+
+  .gp-secondary .gp-prose:has(> h2) > h2 + * {
+    margin-block-start: 0;
+  }
+}
+
+@media (max-width: 60rem) {
+  .gp-secondary-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gp-secondary-hero__body h1 {
+    max-width: 18ch;
+  }
+}
+
+@media (max-width: 42rem) {
+  .gp-secondary .gp-steps--compact,
+  .gp-secondary .gp-feature-split,
+  .gp-secondary .gp-try-band {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gp-secondary .gp-steps--compact > li:nth-child(odd) {
+    border-inline-end: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gp-secondary-hero__body > * {
+    animation: gp-secondary-rise 460ms both;
+  }
+
+  .gp-secondary-hero__body > :nth-child(2) {
+    animation-delay: 70ms;
+  }
+
+  .gp-secondary-hero__body > :nth-child(3) {
+    animation-delay: 140ms;
+  }
+
+  .gp-secondary-hero__body > :nth-child(4) {
+    animation-delay: 210ms;
+  }
+}
+
+@keyframes gp-secondary-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.45rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ------------------------------------------------------------------- nav */
 
 .gp-header {

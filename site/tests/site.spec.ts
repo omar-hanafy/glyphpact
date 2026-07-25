@@ -102,3 +102,104 @@ test('four-card homepage grids form balanced rows', async ({ page }) => {
     expect(boxes[0].width).toBe(boxes[3].width);
   }
 });
+
+test('secondary heroes balance the decision copy and workflow proof', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  for (const route of [
+    '/glyphpact/flutter/',
+    '/glyphpact/vs/icomoon/',
+    '/glyphpact/vs/fluttericon/',
+  ]) {
+    await page.goto(route);
+
+    const copy = await page.locator('.gp-secondary-hero__body').boundingBox();
+    const diagram = await page.locator('.gp-secondary-hero .gp-signal').boundingBox();
+
+    expect(copy).not.toBeNull();
+    expect(diagram).not.toBeNull();
+    expect(copy!.width).toBeGreaterThan(300);
+    expect(diagram!.width).toBeGreaterThan(430);
+    expect(diagram!.x).toBeGreaterThan(copy!.x + copy!.width);
+  }
+});
+
+test('comparison workflow lanes remain readable at desktop width', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  for (const route of ['/glyphpact/vs/icomoon/', '/glyphpact/vs/fluttericon/']) {
+    await page.goto(route);
+    const lanes = page.locator('.gp-secondary-hero .gp-signal__lane');
+    await expect(lanes).toHaveCount(2);
+
+    for (const lane of await lanes.all()) {
+      const nodes = await lane.locator('li').evaluateAll((elements) =>
+        elements.map((element) => {
+          const box = element.getBoundingClientRect();
+          return { x: box.x, y: box.y, width: box.width };
+        }),
+      );
+
+      expect(nodes).toHaveLength(3);
+      expect(nodes[0].x).toBe(nodes[1].x);
+      expect(nodes[1].x).toBe(nodes[2].x);
+      expect(nodes[0].width).toBe(nodes[2].width);
+      expect(nodes[1].y).toBeGreaterThan(nodes[0].y);
+      expect(nodes[2].y).toBeGreaterThan(nodes[1].y);
+    }
+  }
+});
+
+test('Flutter quick start is a two-by-two desktop grid and a mobile sequence', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/glyphpact/flutter/');
+
+  const desktop = await page.locator('.gp-steps--compact > li').evaluateAll((elements) =>
+    elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { x: box.x, y: box.y };
+    }),
+  );
+
+  expect(desktop).toHaveLength(4);
+  expect(desktop[0].y).toBe(desktop[1].y);
+  expect(desktop[2].y).toBe(desktop[3].y);
+  expect(desktop[0].x).toBe(desktop[2].x);
+  expect(desktop[1].x).toBe(desktop[3].x);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobile = await page.locator('.gp-steps--compact > li').evaluateAll((elements) =>
+    elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { x: box.x, y: box.y };
+    }),
+  );
+
+  expect(new Set(mobile.map(({ x }) => x)).size).toBe(1);
+  expect(mobile[1].y).toBeGreaterThan(mobile[0].y);
+  expect(mobile[2].y).toBeGreaterThan(mobile[1].y);
+  expect(mobile[3].y).toBeGreaterThan(mobile[2].y);
+});
+
+for (const colorScheme of ['dark', 'light'] as const) {
+  test(`secondary pages have no detectable accessibility violations in ${colorScheme} mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+
+    for (const route of [
+      '/glyphpact/flutter/',
+      '/glyphpact/vs/icomoon/',
+      '/glyphpact/vs/fluttericon/',
+    ]) {
+      await page.goto(route);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze();
+
+      expect(results.violations, route).toEqual([]);
+    }
+  });
+}

@@ -6,6 +6,7 @@ import ComparisonTable from '../../components/ComparisonTable.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import InstallCommand from '../../components/InstallCommand.astro';
 import NextLinks from '../../components/NextLinks.astro';
+import SignalDiagram from '../../components/SignalDiagram.astro';
 import { path, routes } from '../../site.config';
 import { columnSets, VERIFIED_ON } from '../../data/comparison';
 import { articleSchema, breadcrumbSchema, faqSchema } from '../../lib/schema';
@@ -20,21 +21,44 @@ const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'IcoMoon comparison' }
 const jsonLd = [articleSchema('vsIcomoon'), breadcrumbSchema(crumbs), faqSchema('icomoon')];
 
 const check = 'glyphpact --config icon_font.json --check';
+
+const workflowLanes = [
+  {
+    label: 'IcoMoon',
+    tone: 'manual' as const,
+    nodes: ['Browser session', 'selection.json', 'Export pack'],
+    meta: 'Human-replayed workflow',
+  },
+  {
+    label: 'GlyphPact',
+    tone: 'locked' as const,
+    nodes: ['SVG directory', 'Committed lock', 'CI check'],
+    meta: 'Build-verifiable workflow',
+  },
+];
 ---
 
 <Base title={r.title} description={r.description} canonical={r.href} ogSlug="vsIcomoon" jsonLd={jsonLd}>
   <Breadcrumbs crumbs={crumbs} />
 
-  <article>
-    <header class="gp-shell gp-pagehead">
-      <p class="gp-annotation">Comparison</p>
-      <h1>GlyphPact and IcoMoon solve overlapping problems differently</h1>
-      <p class="gp-lede">
-        IcoMoon is a mature browser application for building icon fonts and web
-        assets. GlyphPact is a command-line compiler for keeping a generated icon
-        font under version control. They overlap, but neither replaces the other
-        outright, and this page tries to say exactly where the line is.
-      </p>
+  <article class="gp-secondary">
+    <header class="gp-shell gp-secondary-hero">
+      <div class="gp-secondary-hero__body">
+        <p class="gp-annotation">Comparison</p>
+        <h1>GlyphPact and IcoMoon solve overlapping problems differently</h1>
+        <p class="gp-lede">
+          IcoMoon is a mature browser application for building icon fonts and web
+          assets. GlyphPact is a command-line compiler for keeping a generated icon
+          font under version control. They overlap, but neither replaces the other
+          outright, and this page tries to say exactly where the line is.
+        </p>
+      </div>
+
+      <SignalDiagram
+        caption="Operating model"
+        title="Same category, different control plane"
+        lanes={workflowLanes}
+      />
     </header>
 
     <section class="gp-section" aria-labelledby="summary">
@@ -44,7 +68,7 @@ const check = 'glyphpact --config icon_font.json --check';
           <h2 id="summary">Which one you want</h2>
         </div>
 
-        <div class="gp-grid gp-grid--2">
+        <div class="gp-grid gp-grid--2 gp-decision-grid">
           <div class="gp-cell">
             <h3>Choose IcoMoon when</h3>
             <ul class="gp-plainlist">
@@ -207,23 +231,23 @@ const check = 'glyphpact --config icon_font.json --check';
     </section>
 
     <section class="gp-section" aria-labelledby="try">
-      <div class="gp-shell">
+      <div class="gp-shell gp-try-band">
         <div class="gp-head">
           <p class="gp-annotation">Try it</p>
           <h2 id="try">Point it at a directory you already have</h2>
         </div>
-        <div style="max-width: 40rem">
+        <div class="gp-try-band__body">
           <InstallCommand explainInstall />
+          <p class="gp-verified" style="margin-block-start: 2rem">
+            <strong>IcoMoon behaviour verified on {VERIFIED_ON}</strong>
+            <span>
+              against <a href="https://icomoon.io/docs">icomoon.io/docs</a> and
+              <a href="https://icomoon.io/old-faq">icomoon.io/old-faq</a>. Quoted
+              text is IcoMoon's own. If any of this has changed, it should be
+              corrected.
+            </span>
+          </p>
         </div>
-        <p class="gp-verified" style="margin-block-start: 2rem">
-          <strong>IcoMoon behaviour verified on {VERIFIED_ON}</strong>
-          <span>
-            against <a href="https://icomoon.io/docs">icomoon.io/docs</a> and
-            <a href="https://icomoon.io/old-faq">icomoon.io/old-faq</a>. Quoted
-            text is IcoMoon's own. If any of this has changed, it should be
-            corrected.
-          </span>
-        </p>
       </div>
     </section>
   </article>
@@ -234,14 +258,6 @@ const check = 'glyphpact --config icon_font.json --check';
 </Base>
 
 <style>
-  .gp-pagehead {
-    padding-block: 2.5rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-    max-width: 48rem;
-  }
-
   .gp-plainlist {
     list-style: none;
     padding: 0;
