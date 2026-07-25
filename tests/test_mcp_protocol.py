@@ -7,6 +7,8 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from glyphpact import __version__
+
 
 def test_stdio_server_initializes_and_lists_the_public_contract() -> None:
     async def exercise() -> None:
@@ -20,7 +22,7 @@ def test_stdio_server_initializes_and_lists_the_public_contract() -> None:
         ):
             initialized = await session.initialize()
             assert initialized.serverInfo.name == "GlyphPact"
-            assert initialized.serverInfo.version == "1.0.0"
+            assert initialized.serverInfo.version == __version__
             tools = await session.list_tools()
             assert {tool.name for tool in tools.tools} == {
                 "audit_icon_pack",

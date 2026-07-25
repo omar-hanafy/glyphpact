@@ -11,7 +11,7 @@ from pathlib import Path
 def main() -> None:
     import glyphpact
 
-    assert glyphpact.__version__ == "1.0.0"
+    assert glyphpact.__version__ == "1.0.1"
     schema_root = files("glyphpact").joinpath("schema")
     required_schemas = {
         "cli-result.schema.json",

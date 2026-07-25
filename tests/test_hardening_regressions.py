@@ -966,6 +966,20 @@ def test_svg_nesting_limit_is_enforced(tmp_path: Path) -> None:
     assert caught.value.diagnostic.code == "SVG_TOO_DEEP"
 
 
+def test_svg_nesting_limit_is_typed_before_the_xml_parser_ceiling(tmp_path: Path) -> None:
+    groups = "<g>" * 300
+    closes = "</g>" * 300
+    content = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+        f'{groups}<path d="M0 0h10v10z"/>{closes}</svg>'
+    )
+
+    with pytest.raises(IconFontError) as caught:
+        compile_svg(_source(content), _compiler_config(tmp_path))
+
+    assert caught.value.diagnostic.code == "SVG_TOO_DEEP"
+
+
 class _CountingSet(set[int]):
     def __init__(self, values: range) -> None:
         super().__init__(values)

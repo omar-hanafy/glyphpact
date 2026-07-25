@@ -17,6 +17,7 @@ from _bundle import (  # noqa: E402
     EXPECTED_MCP_REQUIREMENTS,
     EXPECTED_PACKAGE_MEMBERS,
     EXPECTED_SCHEMA_MEMBERS,
+    EXPECTED_VERSION,
     EXPECTED_WHEEL_FILENAME,
     BundleError,
     inspect_wheel,
@@ -24,6 +25,8 @@ from _bundle import (  # noqa: E402
     verify_plugin_bundle,
     verify_source_matches_bundle,
 )
+
+EXPECTED_DIST_INFO = f"glyphpact-{EXPECTED_VERSION}.dist-info"
 
 
 class BundleTest(unittest.TestCase):
@@ -40,7 +43,7 @@ class BundleTest(unittest.TestCase):
         path: Path,
         *,
         name: str = "glyphpact",
-        version: str = "1.0.0",
+        version: str = EXPECTED_VERSION,
         omit: set[str] | None = None,
         overrides: dict[str, str | bytes] | None = None,
     ) -> None:
@@ -163,7 +166,7 @@ class BundleTest(unittest.TestCase):
             "glyphpact/mcp_server.py",
             "glyphpact/mcp_tools.py",
             "glyphpact/schema/icon-font-report.schema.json",
-            "glyphpact-1.0.0.dist-info/entry_points.txt",
+            f"{EXPECTED_DIST_INFO}/entry_points.txt",
         )
         for missing in missing_members:
             with self.subTest(missing=missing), tempfile.TemporaryDirectory() as temporary:
@@ -183,7 +186,7 @@ class BundleTest(unittest.TestCase):
                 "schema is malformed",
             ),
             (
-                {"glyphpact-1.0.0.dist-info/entry_points.txt": "[console_scripts\n"},
+                {f"{EXPECTED_DIST_INFO}/entry_points.txt": "[console_scripts\n"},
                 "entry_points.txt is malformed",
             ),
         )
@@ -198,7 +201,7 @@ class BundleTest(unittest.TestCase):
         cases = (
             (
                 {
-                    "glyphpact-1.0.0.dist-info/entry_points.txt": (
+                    f"{EXPECTED_DIST_INFO}/entry_points.txt": (
                         "[console_scripts]\n"
                         "glyphpact = glyphpact.cli:main\n"
                         "glyphpact-mcp = glyphpact.cli:main\n"

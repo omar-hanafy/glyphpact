@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.1 - Unreleased
+
+- Fixed lossless compilation of valid root, nested SVG, and symbol `viewBox`
+  values that use comma-whitespace separators or surrounding whitespace.
+- Added stable `SVG_XML_MALFORMED` and `SVG_XML_RESOURCE_LIMIT` diagnostics,
+  preserved `SVG_TOO_DEEP` beyond the XML parser's own nesting ceiling, and
+  stopped exposing raw upstream messages as compiler failures.
+- Classified unexpected conversion faults as `INTERNAL_CONVERSION_ERROR` and
+  corrected the CLI to return exit code 1 for internal diagnostics, including
+  mixed diagnostic batches.
+- Clarified how to resolve embedding-dependent root percentage dimensions
+  without silently choosing a different icon canvas.
+
 ## 1.0.0 - 2026-07-25
 
 - Added recursive SVG pack compilation into validated OpenType/CFF fonts and

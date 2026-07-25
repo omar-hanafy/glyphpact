@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from _bundle import (
+    EXPECTED_VERSION,
     BundleError,
     plugin_root,
     sync_wheel,
@@ -17,14 +18,18 @@ from _bundle import (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Synchronize the exact GlyphPact 1.0.0 wheel into this plugin."
+        description=f"Synchronize the exact GlyphPact {EXPECTED_VERSION} wheel into this plugin."
     )
     parser.add_argument(
         "--check",
         action="store_true",
         help="Verify that the built wheel matches the bundle without changing files.",
     )
-    parser.add_argument("wheel", type=Path, help="Freshly built glyphpact 1.0.0 wheel")
+    parser.add_argument(
+        "wheel",
+        type=Path,
+        help=f"Freshly built glyphpact {EXPECTED_VERSION} wheel",
+    )
     return parser.parse_args()
 
 

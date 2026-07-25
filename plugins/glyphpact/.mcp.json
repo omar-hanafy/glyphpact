@@ -12,7 +12,7 @@
         "--no-config",
         "--isolated",
         "--from",
-        "${CLAUDE_PLUGIN_ROOT}/dist/glyphpact-1.0.0-py3-none-any.whl",
+        "${CLAUDE_PLUGIN_ROOT}/dist/glyphpact-1.0.1-py3-none-any.whl",
         "--with-requirements",
         "${CLAUDE_PLUGIN_ROOT}/dist/mcp-requirements.txt",
         "glyphpact-mcp"

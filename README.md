@@ -58,7 +58,7 @@ skill plus four local MCP tools:
 - check committed output for staleness without rewriting generated artifacts
 - page through large machine-readable reports
 
-The plugin bundles the exact GlyphPact 1.0.0 wheel, starts its MCP server
+The plugin bundles the exact GlyphPact 1.0.1 wheel, starts its MCP server
 automatically, and does not require a source checkout or global GlyphPact
 installation. Add this repository as a marketplace, then install the plugin.
 

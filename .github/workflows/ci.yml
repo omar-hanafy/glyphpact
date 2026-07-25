@@ -51,7 +51,7 @@ jobs:
       - name: Smoke-test the installed wheel
         run: |
           uv venv .wheel-smoke
-          uv pip install --python .wheel-smoke/bin/python "dist/glyphpact-1.0.0-py3-none-any.whl"
+          uv pip install --python .wheel-smoke/bin/python dist/glyphpact-*-py3-none-any.whl
           .wheel-smoke/bin/python tests/wheel_smoke.py
       - run: uv run --with pip-audit pip-audit --local
       - run: uvx check-jsonschema --check-metaschema schema/*.json
@@ -93,7 +93,7 @@ jobs:
           enable-cache: true
       - run: uv sync --locked --all-groups --all-extras
       - run: uv build --clear --no-sources
-      - run: uv run python plugins/glyphpact/scripts/sync_wheel.py --check dist/glyphpact-1.0.0-py3-none-any.whl
+      - run: uv run python plugins/glyphpact/scripts/sync_wheel.py --check dist/glyphpact-*-py3-none-any.whl
       - run: uv run pytest plugins/glyphpact/tests
       - run: uv run python plugins/glyphpact/scripts/validate_plugin.py
       - name: Smoke-test the packaged MCP from a copied plugin cache
