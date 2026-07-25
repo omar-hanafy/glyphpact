@@ -6,6 +6,7 @@ import ComparisonTable from '../../components/ComparisonTable.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import InstallCommand from '../../components/InstallCommand.astro';
 import NextLinks from '../../components/NextLinks.astro';
+import SignalDiagram from '../../components/SignalDiagram.astro';
 import { path, routes } from '../../site.config';
 import { columnSets, VERIFIED_ON } from '../../data/comparison';
 import { articleSchema, breadcrumbSchema, faqSchema } from '../../lib/schema';
@@ -22,6 +23,21 @@ const jsonLd = [
 const compile = `glyphpact assets/icons \\
   --output lib/generated/app_icons \\
   --name AppIcons`;
+
+const workflowLanes = [
+  {
+    label: 'FlutterIcon.com',
+    tone: 'manual' as const,
+    nodes: ['Hosted selection', 'config.json', 'Downloaded bundle'],
+    meta: 'Session-backed workflow',
+  },
+  {
+    label: 'GlyphPact',
+    tone: 'locked' as const,
+    nodes: ['SVG directory', 'Local compiler', 'Reviewed output'],
+    meta: 'Repository-backed workflow',
+  },
+];
 ---
 
 <Base
@@ -33,17 +49,25 @@ const compile = `glyphpact assets/icons \\
 >
   <Breadcrumbs crumbs={crumbs} />
 
-  <article>
-    <header class="gp-shell gp-pagehead">
-      <p class="gp-annotation">Comparison</p>
-      <h1>GlyphPact and FlutterIcon.com, compared fairly</h1>
-      <p class="gp-lede">
-        Both turn SVG artwork into a Flutter icon font and a Dart icon class.
-        FlutterIcon.com does it in a hosted browser session with a library of
-        ready-made icon packs. GlyphPact does it as a local command with a
-        committed codepoint registry. The right answer depends on how often your
-        icon set changes and who changes it.
-      </p>
+  <article class="gp-secondary">
+    <header class="gp-shell gp-secondary-hero">
+      <div class="gp-secondary-hero__body">
+        <p class="gp-annotation">Comparison</p>
+        <h1>GlyphPact and FlutterIcon.com, compared fairly</h1>
+        <p class="gp-lede">
+          Both turn SVG artwork into a Flutter icon font and a Dart icon class.
+          FlutterIcon.com does it in a hosted browser session with a library of
+          ready-made icon packs. GlyphPact does it as a local command with a
+          committed codepoint registry. The right answer depends on how often your
+          icon set changes and who changes it.
+        </p>
+      </div>
+
+      <SignalDiagram
+        caption="Operating model"
+        title="Session-backed or repository-backed"
+        lanes={workflowLanes}
+      />
     </header>
 
     <section class="gp-section" aria-labelledby="what">
@@ -74,7 +98,7 @@ const compile = `glyphpact assets/icons \\
           <h2 id="model">A session you operate, or a command your build runs</h2>
         </div>
 
-        <div class="gp-grid gp-grid--2">
+        <div class="gp-grid gp-grid--2 gp-decision-grid">
           <div class="gp-cell">
             <h3>Hosted session</h3>
             <p>
@@ -183,32 +207,32 @@ const compile = `glyphpact assets/icons \\
     </section>
 
     <section class="gp-section" aria-labelledby="try">
-      <div class="gp-shell">
+      <div class="gp-shell gp-try-band">
         <div class="gp-head">
           <p class="gp-annotation">Try it</p>
           <h2 id="try">Compile a pack you already have</h2>
         </div>
-        <div style="max-width: 40rem">
+        <div class="gp-try-band__body">
           <InstallCommand explainInstall />
-        </div>
-        <p class="gp-muted" style="margin-block-start: 1.25rem; max-width: 62ch">
-          If you currently use FlutterIcon.com, export your set once, commit the
-          SVG sources, and compile from those. GlyphPact does not care what drew
-          them.
-        </p>
+          <p class="gp-muted" style="margin-block-start: 1.25rem; max-width: 62ch">
+            If you currently use FlutterIcon.com, export your set once, commit the
+            SVG sources, and compile from those. GlyphPact does not care what drew
+            them.
+          </p>
 
-        <p class="gp-verified" style="margin-block-start: 2rem">
-          <strong>Verified on {VERIFIED_ON}</strong>
-          <span>
-            against <a href="https://www.fluttericon.com/">fluttericon.com</a>,
-            <a href="https://github.com/ilikerobots/polyicon">ilikerobots/polyicon</a>,
-            <a href="https://github.com/fontello/fontello">fontello/fontello</a>,
-            and
-            <a href="https://pub.dev/packages/icon_font_generator"
-              >pub.dev/packages/icon_font_generator</a
-            >. If any of this has changed, it should be corrected.
-          </span>
-        </p>
+          <p class="gp-verified" style="margin-block-start: 2rem">
+            <strong>Verified on {VERIFIED_ON}</strong>
+            <span>
+              against <a href="https://www.fluttericon.com/">fluttericon.com</a>,
+              <a href="https://github.com/ilikerobots/polyicon">ilikerobots/polyicon</a>,
+              <a href="https://github.com/fontello/fontello">fontello/fontello</a>,
+              and
+              <a href="https://pub.dev/packages/icon_font_generator"
+                >pub.dev/packages/icon_font_generator</a
+              >. If any of this has changed, it should be corrected.
+            </span>
+          </p>
+        </div>
       </div>
     </section>
   </article>
@@ -217,13 +241,3 @@ const compile = `glyphpact assets/icons \\
 
   <NextLinks keys={['flutter', 'codepoints', 'vsIcomoon']} />
 </Base>
-
-<style>
-  .gp-pagehead {
-    padding-block: 2.5rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-    max-width: 48rem;
-  }
-</style>
