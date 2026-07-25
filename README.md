@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/brand/glyphpact-icon.svg" alt="" width="72" height="72">
+  <img src="https://raw.githubusercontent.com/omar-hanafy/glyphpact/v1.0.1/brand/glyphpact-icon.svg" alt="" width="72" height="72">
 </p>
 
 <h1 align="center">GlyphPact</h1>
@@ -37,11 +37,23 @@ project file, and no server that receives your artwork.
 GlyphPact requires Python 3.10 or newer. Generated providers require Dart 3 or
 newer.
 
-Install the command directly from GitHub with
-[uv](https://docs.astral.sh/uv/):
+Install the latest stable release from PyPI with
+[uv](https://docs.astral.sh/uv/concepts/tools/):
 
 ```bash
-uv tool install git+https://github.com/omar-hanafy/glyphpact.git@v1.0.0
+uv tool install glyphpact
+```
+
+Upgrade an existing installation when a new release is available:
+
+```bash
+uv tool upgrade glyphpact
+```
+
+Pin the version in CI or any other reproducible environment:
+
+```bash
+uv tool install glyphpact==1.0.1
 ```
 
 Compile a Flutter icon pack:
@@ -60,7 +72,7 @@ uv run glyphpact --config examples/icon_font.json
 ```
 
 The example SVGs are original MIT-licensed fixtures. See
-[examples/README.md](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/examples/README.md).
+[examples/README.md](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/examples/README.md).
 
 ## Claude Code and Codex plugin
 
@@ -92,7 +104,7 @@ codex plugin add glyphpact@glyphpact
 
 Start a new session after installation. Do not add a duplicate personal MCP
 configuration. See the
-[plugin guide](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/plugins/glyphpact/README.md)
+[plugin guide](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/plugins/glyphpact/README.md)
 for its runtime requirements, mutation boundary, and maintainer validation
 flow.
 
@@ -157,7 +169,7 @@ glyphpact assets/icons \
 ```
 
 See
-[Flutter integration](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/docs/flutter-adoption.md)
+[Flutter integration](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/flutter-adoption.md)
 for app fonts, package fonts, layered icons, CI checks, and accessibility
 notes.
 
@@ -204,7 +216,7 @@ larger catalog into multiple independently versioned fonts.
 
 Performance depends heavily on SVG complexity, not just file count. GlyphPact
 does not publish a private-corpus headline. The
-[benchmark guide](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/docs/benchmarking.md)
+[benchmark guide](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/benchmarking.md)
 provides a reproducible local runner and reporting checklist for your own pack.
 
 ## Reproducible config
@@ -304,7 +316,7 @@ same-codepoint font families:
 The generated Dart API includes a layered icon widget and layer descriptors.
 The ordinary `IconData` remains available as the explicitly selected
 single-glyph fallback. See
-[examples/layered_icon_font.json](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/examples/layered_icon_font.json)
+[examples/layered_icon_font.json](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/examples/layered_icon_font.json)
 for a runnable example.
 
 ## Supported SVG profile
@@ -321,7 +333,7 @@ GlyphPact resolves common icon geometry directly, including:
 Features that need a browser, external environment, animation runtime, or an
 unsupported compositing model are classified instead of guessed. The complete
 versioned contract is in the
-[SVG profile](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/docs/svg-profile.md).
+[SVG profile](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/svg-profile.md).
 
 ## Failure-safe output
 
@@ -377,7 +389,7 @@ npm run dev
 ```
 
 See
-[CONTRIBUTING.md](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/CONTRIBUTING.md)
+[CONTRIBUTING.md](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/CONTRIBUTING.md)
 for semantic and validation requirements.
 
 ## License and artwork
@@ -396,8 +408,8 @@ which is the single source of truth for the identity and documents how to
 replace it.
 
 See the
-[changelog](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/CHANGELOG.md),
-[architecture](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/docs/architecture.md),
-[security policy](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/SECURITY.md),
+[changelog](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/CHANGELOG.md),
+[architecture](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/architecture.md),
+[security policy](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/SECURITY.md),
 and
-[third-party notice](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/NOTICE).
+[third-party notice](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/NOTICE).

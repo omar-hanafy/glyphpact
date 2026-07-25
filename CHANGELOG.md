@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1 - Unreleased
+## 1.0.1 - 2026-07-25
 
 - Fixed lossless compilation of valid root, nested SVG, and symbol `viewBox`
   values that use comma-whitespace separators or surrounding whitespace.
@@ -12,6 +12,13 @@
   mixed diagnostic batches.
 - Clarified how to resolve embedding-dependent root percentage dimensions
   without silently choosing a different icon canvas.
+- Added the official GlyphPact website, canonical brand assets, social
+  previews, and self-contained Claude Code and Codex plugin branding.
+- Added automated responsive-layout, accessibility, metadata, link, and
+  capability-claim checks for the public site.
+- Added tag-only PyPI trusted publishing with attestations, a default-branch
+  containment guard, exact release-tool pins, and reproducible package
+  metadata.
 
 ## 1.0.0 - 2026-07-25
 
