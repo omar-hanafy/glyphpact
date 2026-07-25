@@ -138,6 +138,29 @@ class BundleTest(unittest.TestCase):
         _verify_manifests(PLUGIN_ROOT)
         self.assertTrue(_verify_brand_assets(PLUGIN_ROOT))
 
+    def test_manifest_brand_metadata_drift_is_rejected(self) -> None:
+        cases = (
+            (".claude-plugin", "displayName", "Wrong Name", "displayName"),
+            (".claude-plugin", "homepage", "https://example.com", "homepage"),
+            (".codex-plugin", "homepage", "https://example.com", "homepage"),
+        )
+        for directory, key, value, message in cases:
+            with (
+                self.subTest(key=key, directory=directory),
+                tempfile.TemporaryDirectory() as temporary,
+            ):
+                root = Path(temporary)
+                shutil.copytree(PLUGIN_ROOT / ".claude-plugin", root / ".claude-plugin")
+                shutil.copytree(PLUGIN_ROOT / ".codex-plugin", root / ".codex-plugin")
+                shutil.copy2(PLUGIN_ROOT / ".mcp.json", root / ".mcp.json")
+                path = root / directory / "plugin.json"
+                manifest = json.loads(path.read_text(encoding="utf-8"))
+                manifest[key] = value
+                path.write_text(json.dumps(manifest), encoding="utf-8")
+
+                with self.assertRaisesRegex(BundleError, message):
+                    _verify_manifests(root)
+
     def test_brand_asset_drift_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)

@@ -18,7 +18,10 @@ from _bundle import (
 )
 
 _BRAND_ASSETS = ("glyphpact-icon.svg", "glyphpact-mark.svg")
+_BRAND_DISPLAY_NAME = "GlyphPact"
+_BRAND_HOMEPAGE = "https://omar-hanafy.github.io/glyphpact/"
 _CODEX_BRAND_INTERFACE = {
+    "displayName": _BRAND_DISPLAY_NAME,
     "brandColor": "#22D3EE",
     "logo": "./assets/glyphpact-icon.svg",
     "composerIcon": "./assets/glyphpact-mark.svg",
@@ -55,6 +58,11 @@ def _verify_manifests(root: Path) -> None:
             raise BundleError(f"{label} manifest version must be {EXPECTED_VERSION!r}.")
         if manifest.get("mcpServers") != "./.mcp.json":
             raise BundleError(f"{label} manifest must load ./.mcp.json.")
+        if manifest.get("homepage") != _BRAND_HOMEPAGE:
+            raise BundleError(f"{label} manifest homepage must be {_BRAND_HOMEPAGE!r}.")
+
+    if claude.get("displayName") != _BRAND_DISPLAY_NAME:
+        raise BundleError(f"Claude Code manifest displayName must be {_BRAND_DISPLAY_NAME!r}.")
 
     interface = codex.get("interface")
     if not isinstance(interface, dict):
@@ -153,6 +161,8 @@ def _verify_marketplaces(root: Path) -> bool:
     claude_entry = _plugin_entry(claude, claude_path)
     if claude_entry.get("source") != "./plugins/glyphpact":
         raise BundleError("Claude Code marketplace source must be ./plugins/glyphpact.")
+    if claude_entry.get("displayName") != _BRAND_DISPLAY_NAME:
+        raise BundleError(f"Claude Code marketplace displayName must be {_BRAND_DISPLAY_NAME!r}.")
 
     codex_entry = _plugin_entry(codex, codex_path)
     if codex_entry.get("source") != {
