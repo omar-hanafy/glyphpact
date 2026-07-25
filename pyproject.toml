@@ -35,7 +35,7 @@ dependencies = [
   "skia-pathops==0.9.2",
   "tinycss2==1.5.1",
   "uharfbuzz==0.55.0",
-  "webcolors==24.11.1",
+  "webcolors==25.10.0",
 ]
 
 [project.optional-dependencies]
