@@ -136,3 +136,8 @@ Run the bundled CLI directly when debugging a packaged release:
 ```bash
 python plugins/glyphpact/scripts/run_glyphpact.py --version
 ```
+
+## Support
+
+If GlyphPact saves you time, you can
+[support ongoing maintenance](https://buymeacoffee.com/omar.hanafy).

@@ -53,6 +53,7 @@ export const site = {
   license: 'MIT',
   links: {
     repo: REPO,
+    support: 'https://buymeacoffee.com/omar.hanafy',
     issues: `${REPO}/issues`,
     releases: `${REPO}/releases`,
     readme: `${REPO}#readme`,

@@ -76,6 +76,19 @@ def test_release_versions_and_generated_surfaces_agree(tmp_path: Path) -> None:
     assert f"GlyphPact {__version__}" in dart
 
 
+def test_support_url_is_consistent_across_passive_public_surfaces() -> None:
+    project = Path(__file__).parents[1]
+    expected = "https://buymeacoffee.com/omar.hanafy"
+    assert (project / ".github" / "FUNDING.yml").read_text(encoding="utf-8") == (
+        "buy_me_a_coffee: omar.hanafy\n"
+    )
+
+    plugin_readme = (project / "plugins" / "glyphpact" / "README.md").read_text(encoding="utf-8")
+    site_config = (project / "site" / "src" / "site.config.ts").read_text(encoding="utf-8")
+    assert plugin_readme.count(expected) == 1
+    assert f"support: '{expected}'" in site_config
+
+
 def test_release_publication_is_tag_only_and_default_branch_contained() -> None:
     project = Path(__file__).parents[1]
     workflow = (project / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
