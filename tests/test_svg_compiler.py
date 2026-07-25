@@ -94,6 +94,46 @@ def test_xml_parser_resource_diagnostic_does_not_leak_to_the_next_document(tmp_p
     assert malformed_caught.value.diagnostic.code == "SVG_XML_MALFORMED"
 
 
+def test_early_malformed_namespace_precedes_a_later_depth_violation(tmp_path) -> None:
+    groups = "<x:g>" * 300
+    closes = "</x:g>" * 300
+    content = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+        f'{groups}<path d="M0 0h10v10z"/>{closes}</svg>'
+    )
+
+    with pytest.raises(IconFontError) as caught:
+        compile_svg(_source(content), _config(tmp_path))
+
+    assert caught.value.diagnostic.code == "SVG_XML_MALFORMED"
+
+
+def test_xml_resource_message_is_typed_when_the_platform_code_differs(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail_parse(_content: str):
+        raise svg_compiler_module.etree.XMLSyntaxError(
+            "Resource limit exceeded: Text node too long, try XML_PARSE_HUGE",
+            1,
+            1,
+            1,
+        )
+
+    monkeypatch.setattr(svg_compiler_module.SVG, "fromstring", staticmethod(fail_parse))
+
+    with pytest.raises(IconFontError) as caught:
+        compile_svg(
+            _source(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+                '<path d="M0 0h24v24H0z"/></svg>'
+            ),
+            _config(tmp_path),
+        )
+
+    assert caught.value.diagnostic.code == "SVG_XML_RESOURCE_LIMIT"
+    assert "XML_PARSE_HUGE" not in caught.value.diagnostic.render()
+
+
 def test_well_formed_non_svg_xml_has_a_root_diagnostic(tmp_path) -> None:
     with pytest.raises(IconFontError) as caught:
         compile_svg(_source("<html/>"), _config(tmp_path))

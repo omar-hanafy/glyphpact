@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import Any, NoReturn, cast
+from xml.parsers import expat
 
 import webcolors
 from lxml import etree
@@ -57,6 +58,13 @@ _FORBIDDEN_ELEMENTS = frozenset(
 _PAINT_SERVER_ELEMENTS = frozenset({"linearGradient", "pattern", "radialGradient", "stop"})
 
 _SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+_MAX_XML_NESTING = 128
+_XML_RESOURCE_ERROR_PREFIXES = (
+    "Buffer size limit exceeded",
+    "Excessive depth",
+    "Resource limit exceeded",
+    "Text node too long",
+)
 
 _SUPPORTED_ELEMENTS = frozenset(
     {
@@ -669,6 +677,37 @@ def _reject_unsafe_xml(source: SvgSource) -> None:
             "DOCTYPE and ENTITY declarations are forbidden.",
             source=source.source_id,
         )
+
+
+class _XmlNestingExceeded(RuntimeError):
+    pass
+
+
+def _exceeds_xml_nesting_limit(content: str) -> bool:
+    """Probe depth only after lxml rejects a document."""
+
+    depth = -1
+    parser = expat.ParserCreate(namespace_separator="}")
+
+    def start_element(_name: str, _attributes: dict[str, str]) -> None:
+        nonlocal depth
+        depth += 1
+        if depth > _MAX_XML_NESTING:
+            raise _XmlNestingExceeded
+
+    def end_element(_name: str) -> None:
+        nonlocal depth
+        depth -= 1
+
+    parser.StartElementHandler = start_element
+    parser.EndElementHandler = end_element
+    try:
+        parser.Parse(content, True)
+    except _XmlNestingExceeded:
+        return True
+    except (expat.ExpatError, ValueError):
+        return False
+    return False
 
 
 def _parse_style(style: str, source_id: str) -> dict[str, str]:
@@ -1330,10 +1369,10 @@ def _enforce_tree_limits(root: Any, source: SvgSource, config: BuildConfig) -> N
         parent = element.getparent()
         while parent is not None:
             depth += 1
-            if depth > 128:
+            if depth > _MAX_XML_NESTING:
                 raise IconFontError(
                     "SVG_TOO_DEEP",
-                    "The SVG exceeds the 128-element nesting limit.",
+                    f"The SVG exceeds the {_MAX_XML_NESTING}-element nesting limit.",
                     source=source.source_id,
                 )
             parent = parent.getparent()
@@ -6445,13 +6484,15 @@ def compile_svg(source: SvgSource, config: BuildConfig) -> CanonicalGlyph:
         try:
             svg = SVG.fromstring(source.content)
         except etree.XMLSyntaxError as error:
-            if error.code == etree.ErrorTypes.ERR_RESOURCE_LIMIT:
-                if error.msg.startswith("Excessive depth"):
-                    raise IconFontError(
-                        "SVG_TOO_DEEP",
-                        "The SVG exceeds the 128-element nesting limit.",
-                        source=source.source_id,
-                    ) from error
+            if _exceeds_xml_nesting_limit(source.content):
+                raise IconFontError(
+                    "SVG_TOO_DEEP",
+                    f"The SVG exceeds the {_MAX_XML_NESTING}-element nesting limit.",
+                    source=source.source_id,
+                ) from error
+            if error.code == etree.ErrorTypes.ERR_RESOURCE_LIMIT or error.msg.startswith(
+                _XML_RESOURCE_ERROR_PREFIXES
+            ):
                 raise IconFontError(
                     "SVG_XML_RESOURCE_LIMIT",
                     "The XML document exceeds a parser resource limit.",
