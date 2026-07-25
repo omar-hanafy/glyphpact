@@ -8,6 +8,7 @@
   "plugins": [
     {
       "name": "glyphpact",
+      "displayName": "GlyphPact",
       "source": "./plugins/glyphpact",
       "description": "Audit, compile, check, wire, and visually verify large SVG sets as stable Flutter IconData fonts."
     }
