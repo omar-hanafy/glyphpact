@@ -12,6 +12,8 @@
  * question or the surrounding page.
  */
 
+import { site } from '../site.config';
+
 export interface FaqEntry {
   id: string;
   question: string;
@@ -103,7 +105,7 @@ export const faq: FaqEntry[] = [
       'GlyphPact sorts each source into one of three outcomes. Lossless sources are normalized and emitted automatically. Deterministically approximable sources are emitted only when the lossy policy is set to convert, and are reported as a typed lossy issue. Sources with no faithful conversion are omitted only when the unrepresentable policy is set to skip, and are reported as a typed unrepresentable issue.',
       'Both policies default to error, so by default an affected build fails and prints the diagnostic code, the file, and the feature instead of shipping a wrong-looking icon. Malformed, unsafe, or unknown input, and exhausted resource limits, always fail regardless of policy.',
     ],
-    more: { label: 'The versioned SVG profile', href: 'https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/docs/svg-profile.md' },
+    more: { label: 'The versioned SVG profile', href: site.links.svgProfile },
     pages: ['home'],
   },
   {
@@ -164,7 +166,7 @@ export const faq: FaqEntry[] = [
       'Yes. The repository ships an optional plugin for Claude Code and Codex that bundles the release wheel and starts a local stdio MCP server, without needing a source checkout or a global install.',
       'It exposes four tools: audit an SVG file or directory and page a stable local snapshot of the findings, build the output declared by a checked-in config, check committed output for staleness without rewriting artifacts, and page through large machine-readable reports. The config, report, and CLI-result JSON schemas are exposed as MCP resources so an agent can validate what it reads. The audit and report tools are annotated read-only, and the server runs locally over stdio.',
     ],
-    more: { label: 'Plugin guide', href: 'https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/plugins/glyphpact/README.md' },
+    more: { label: 'Plugin guide', href: site.links.pluginGuide },
     pages: ['home'],
   },
 ];

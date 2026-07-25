@@ -134,9 +134,9 @@ jobs:
   icons:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v9
-      - run: uv tool install git+${site.repo}.git@v${RELEASE.version}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - run: uv tool install glyphpact==${RELEASE.version}
       # Exit code 3 means the committed artifacts are stale.
       - run: glyphpact --config icon_font.json --check --json`;
 
@@ -177,7 +177,7 @@ lib/generated/.app_icons.glyphpact.lock`;
           <li>
             <div>
               <h3>Install GlyphPact</h3>
-              <InstallCommand explainPin />
+              <InstallCommand explainInstall />
             </div>
           </li>
           <li>
