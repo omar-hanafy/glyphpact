@@ -668,15 +668,23 @@ main {
   border-block-end-color: var(--accent);
 }
 
-.gp-nav__repo {
+.gp-nav__utility {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
 }
 
-.gp-nav__repo svg {
+.gp-nav__utility svg {
   inline-size: 1rem;
   block-size: 1rem;
+}
+
+.gp-nav__coffee svg {
+  color: var(--accent);
+  stroke: currentcolor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .gp-mobile-nav {
