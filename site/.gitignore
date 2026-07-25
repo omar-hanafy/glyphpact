@@ -1,0 +1,8 @@
+# Build output. The Pages workflow rebuilds it from source on every deploy.
+dist/
+
+# Astro's generated types and cache.
+.astro/
+
+# Dependencies. package-lock.json is committed so installs are reproducible.
+node_modules/

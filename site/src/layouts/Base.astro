@@ -1,0 +1,143 @@
+---
+/**
+ * The page shell: metadata, fonts, landmarks, navigation, footer.
+ *
+ * Every absolute URL here is built by `absolute()` so canonical links, Open
+ * Graph, social cards, and the sitemap all agree, and so moving to a custom
+ * domain stays a one-value change.
+ */
+import '../styles/global.css';
+import { site, absolute, path, RELEASE } from '../site.config';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  /** Page title, without the site-name suffix. */
+  title: string;
+  description: string;
+  /** Route path for the canonical URL, e.g. `/flutter/`. */
+  canonical: string;
+  /** Social card slug; resolves to /og/<slug>.png. */
+  ogSlug: string;
+  /** Structured data objects, serialised into one script per object. */
+  jsonLd?: Record<string, unknown>[];
+  /** Keeps a page out of search results. Used for 404 only. */
+  noindex?: boolean;
+}
+
+const { title, description, canonical, ogSlug, jsonLd = [], noindex = false } = Astro.props;
+
+const canonicalUrl = absolute(canonical);
+const ogImage = absolute(`/og/${ogSlug}.png`);
+const fullTitle = title.includes(site.name) ? title : `${title} - ${site.name}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${title} - ${site.name}`} />
+    <meta property="og:locale" content="en" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={`${title} - ${site.name}`} />
+
+    <link rel="icon" href={path('/favicon.svg')} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={path('/favicon.svg')} />
+    <meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fbfbfc" media="(prefers-color-scheme: light)" />
+
+    <meta name="author" content={site.author.name} />
+    <meta name="generator" content={Astro.generator} />
+
+    {/* Both faces are used above the fold: sans for the headline, mono for the
+        install command. Nothing else is preloaded. */}
+    <link
+      rel="preload"
+      href={path('/fonts/geist-latin.woff2')}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href={path('/fonts/geist-mono-latin.woff2')}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    {
+      jsonLd.map((block) => (
+        <script type="application/ld+json" set:html={JSON.stringify(block)} is:inline />
+      ))
+    }
+
+    {/* Copy controls are hidden by CSS until this flag is set. Running here,
+        before the body is parsed, means the buttons are either painted from the
+        very first frame or never painted - so enhancement costs no layout
+        shift, and a browser without the Clipboard API simply never shows
+        them. */}
+    <script is:inline>
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        document.documentElement.dataset.clipboard = 'ready';
+      }
+    </script>
+  </head>
+
+  <body>
+    <a class="gp-skip" href="#main">Skip to content</a>
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer version={RELEASE.version} />
+
+    {/* The site's only shipped script. Delegated, so one listener covers every
+        copy control on the page regardless of how many there are. */}
+    <script>
+      document.addEventListener('click', async (event) => {
+        const target = event.target as Element | null;
+        const button = target?.closest<HTMLButtonElement>('[data-gp-copy]');
+        if (!button) return;
+
+        const value = button.dataset.gpCopy ?? '';
+        const label = button.querySelector('[data-gp-copy-label]');
+        const original = label?.textContent ?? 'Copy';
+
+        try {
+          await navigator.clipboard.writeText(value);
+          button.dataset.state = 'done';
+          if (label) label.textContent = 'Copied';
+        } catch {
+          // Permission denied or a non-secure context. Say so rather than
+          // reporting a success that did not happen.
+          if (label) label.textContent = 'Press Ctrl+C';
+        }
+
+        window.setTimeout(() => {
+          delete button.dataset.state;
+          if (label) label.textContent = original;
+        }, 2000);
+      });
+    </script>
+  </body>
+</html>

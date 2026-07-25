@@ -1,0 +1,198 @@
+---
+import {
+  dimensions,
+  toolById,
+  supportLabel,
+  VERIFIED_ON,
+  type Support,
+} from '../data/comparison';
+
+/**
+ * Comparison table.
+ *
+ * Two commitments shape this component. First, no cell communicates through
+ * colour or an icon alone: the answer is written out, and the support level is
+ * additionally announced to assistive technology as a visually hidden prefix.
+ * Second, every column carries its sources and the whole table carries a
+ * verification date, because a comparison without provenance is just an
+ * assertion.
+ */
+interface Props {
+  /** Tool ids to show as columns, in order. First should be GlyphPact. */
+  columns: readonly string[];
+  /** Dimension ids to show as rows. Defaults to all of them. */
+  rows?: readonly string[];
+  caption: string;
+}
+
+const { columns, rows, caption } = Astro.props;
+const shown = rows ? dimensions.filter((d) => rows.includes(d.id)) : dimensions;
+const cols = columns.map(toolById);
+
+const glyph: Record<Support, string> = {
+  yes: '●',
+  no: '○',
+  conditional: '◐',
+  manual: '◐',
+  undocumented: '—',
+};
+---
+
+{/* data-claims marks this subtree as describing third-party capabilities.
+    scripts/check-claims.mjs excludes it, so a cell that correctly says another
+    tool generates WOFF2 is not mistaken for GlyphPact claiming to. */}
+<figure class="gp-compare" data-claims="third-party">
+  <div class="gp-table-wrap">
+    <table>
+      <caption>{caption}</caption>
+      <thead>
+        <tr>
+          <td></td>
+          {
+            cols.map((tool) => (
+              <th scope="col" class={tool.isSelf ? 'gp-col-self' : undefined}>
+                <a href={tool.href}>{tool.name}</a>
+                <small>{tool.kind}</small>
+              </th>
+            ))
+          }
+        </tr>
+      </thead>
+      <tbody>
+        {
+          shown.map((dim) => (
+            <tr>
+              <th scope="row">
+                {dim.label}
+                <small>{dim.why}</small>
+              </th>
+              {cols.map((tool) => {
+                const cell = dim.cells[tool.id];
+                return (
+                  <td class={tool.isSelf ? 'gp-col-self' : undefined}>
+                    <span class={`gp-support gp-support--${cell.support}`}>
+                      <span aria-hidden="true">{glyph[cell.support]}</span>
+                      <span class="gp-sr">{supportLabel[cell.support]}: </span>
+                      <b>{cell.value}</b>
+                    </span>
+                    {cell.note && <small>{cell.note}</small>}
+                  </td>
+                );
+              })}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <figcaption class="gp-verified">
+    <strong>Verified on {VERIFIED_ON}.</strong>
+    <span>
+      Checked against current first-party documentation and, for GlyphPact,
+      against observed output. Sources:
+      {
+        cols.map((tool, i) => (
+          <>
+            {i > 0 && '; '}
+            {tool.name}
+            {' '}
+            {tool.sources.map((s, j) => (
+              <>
+                {j > 0 && ', '}
+                <a href={s.href}>{s.label}</a>
+              </>
+            ))}
+          </>
+        ))
+      }.
+    </span>
+    <span>
+      Behaviour changes. If a cell has gone out of date, it is worth reporting.
+    </span>
+  </figcaption>
+</figure>
+
+<style>
+  .gp-compare thead th {
+    vertical-align: bottom;
+  }
+
+  .gp-compare thead th a {
+    color: var(--text);
+    font-size: 0.92rem;
+    text-transform: none;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .gp-compare thead th a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+
+  .gp-compare thead th small {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .gp-compare tbody th {
+    min-width: 13rem;
+    max-width: 17rem;
+  }
+
+  .gp-compare tbody th small {
+    font-weight: 400;
+  }
+
+  .gp-compare td {
+    min-width: 11rem;
+    max-width: 16rem;
+  }
+
+  .gp-support {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    line-height: 1.4;
+  }
+
+  .gp-support b {
+    font-weight: 500;
+  }
+
+  .gp-support--yes {
+    color: var(--ok);
+  }
+
+  .gp-support--no {
+    color: var(--text-faint);
+  }
+
+  .gp-support--conditional,
+  .gp-support--manual {
+    color: var(--lossy);
+  }
+
+  .gp-support--undocumented {
+    color: var(--text-faint);
+  }
+
+  /* The written answer belongs to the page, not to the state colour. */
+  .gp-support b {
+    color: var(--text);
+  }
+
+  .gp-compare figcaption {
+    margin-block-start: 1rem;
+    max-width: none;
+  }
+
+  .gp-compare figcaption a {
+    color: var(--text-muted);
+  }
+</style>

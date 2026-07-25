@@ -1,0 +1,46 @@
+---
+import CopyButton from './CopyButton.astro';
+
+interface Props {
+  /** Shown in the block's title bar, e.g. a filename or `bash`. */
+  title?: string;
+  /** Right-aligned note in the title bar, e.g. an exit code. */
+  meta?: string;
+  /** Offer a copy control for this block's content. */
+  copy?: string;
+  /** Accessible label describing the block, when the title is not enough. */
+  label?: string;
+}
+
+const { title, meta, copy, label } = Astro.props;
+---
+
+<div class="gp-code">
+  {
+    (title || meta || copy) && (
+      <div class="gp-code__bar">
+        {title && <span>{title}</span>}
+        {meta && <span>{meta}</span>}
+        {
+          /* The accessible name must start with the visible word "Copy" to
+             satisfy WCAG 2.5.3 Label in Name; `label` describes the block for
+             the <pre> below and is not a substitute for it. */
+          copy && <CopyButton value={copy} label={`Copy ${title ?? 'code'}`} />
+        }
+      </div>
+    )
+  }
+  {/* tabindex makes an overflowing block reachable by keyboard scroll. */}
+  <pre tabindex="0" aria-label={label}><slot /></pre>
+</div>
+
+<style>
+  /* The copy control sits in the title bar, so it needs no left divider. */
+  .gp-code__bar :global(.gp-copy) {
+    border-inline-start: 0;
+    background: transparent;
+    padding-inline: 0.4rem;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+</style>

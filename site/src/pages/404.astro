@@ -1,0 +1,85 @@
+---
+import Base from '../layouts/Base.astro';
+import { path, routes, site } from '../site.config';
+import BrandMark from '../components/BrandMark.astro';
+
+/**
+ * GitHub Pages serves this for unmatched paths under the project subpath.
+ * Deliberately useful rather than decorative: every real route is one click
+ * away, because a 404 is usually a mistyped or moved URL.
+ */
+---
+
+<Base
+  title="Page not found"
+  description="That page does not exist on the GlyphPact site. Links to the overview, the stable-codepoints explainer, the Flutter guide, and the comparisons."
+  canonical="/404/"
+  ogSlug="404"
+  noindex
+>
+  <div class="gp-shell gp-404">
+    <BrandMark size="2.5rem" />
+    <p class="gp-annotation">404</p>
+    <h1>That page does not exist</h1>
+    <p class="gp-lede">
+      The compiler is stricter than this website, but not much. Here is
+      everything that is actually here.
+    </p>
+
+    <ul class="gp-404__links">
+      <li>
+        <a href={path(routes.home.href)}>Overview</a>
+        <span>What GlyphPact is, what it generates, and the workflow.</span>
+      </li>
+      <li>
+        <a href={path(routes.codepoints.href)}>Stable codepoints</a>
+        <span>Why icon-font codepoints move, and how the lock file stops it.</span>
+      </li>
+      <li>
+        <a href={path(routes.flutter.href)}>Flutter integration</a>
+        <span>Pubspec setup, generated IconData, layered icons, and CI.</span>
+      </li>
+      <li>
+        <a href={path(routes.vsIcomoon.href)}>Compared with IcoMoon</a>
+        <span>Where each tool fits, with sources and a verification date.</span>
+      </li>
+      <li>
+        <a href={path(routes.vsFlutterIcon.href)}>Compared with FlutterIcon.com</a>
+        <span>The hosted Flutter alternative, assessed fairly.</span>
+      </li>
+      <li>
+        <a href={site.links.repo}>Source on GitHub</a>
+        <span>The compiler, its documentation, and its issue tracker.</span>
+      </li>
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .gp-404__links {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .gp-404__links li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding-block-end: 1rem;
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .gp-404__links li:last-child {
+    border-block-end: 0;
+  }
+
+  .gp-404__links span {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+</style>

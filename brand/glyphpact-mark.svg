@@ -1,0 +1,22 @@
+<!-- SPDX-License-Identifier: MIT -->
+<!--
+  GlyphPact identity mark - "registered em square, locked node".
+
+  Four registration marks measure the em square. The solid diamond at the
+  centre is the vector anchor point: the codepoint that never moves.
+
+  Geometry is filled outlines only, in one colour, exactly like the glyphs
+  GlyphPact compiles. Paint is `currentColor` so the mark inherits type
+  colour wherever it is inlined. The `.gp-mark__node` class is the only
+  hook a two-tone treatment needs.
+
+  Rebranding: see brand/README.md. Replace this file and the palette in
+  brand/tokens.json; nothing else references the geometry.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" fill-rule="evenodd">
+  <path class="gp-mark__frame" d="M2.5 2.5H10.5V6.5H6.5V10.5H2.5Z" />
+  <path class="gp-mark__frame" d="M29.5 2.5H21.5V6.5H25.5V10.5H29.5Z" />
+  <path class="gp-mark__frame" d="M2.5 29.5H10.5V25.5H6.5V21.5H2.5Z" />
+  <path class="gp-mark__frame" d="M29.5 29.5H21.5V25.5H25.5V21.5H29.5Z" />
+  <path class="gp-mark__node" d="M16 11.5 20.5 16 16 20.5 11.5 16Z" />
+</svg>

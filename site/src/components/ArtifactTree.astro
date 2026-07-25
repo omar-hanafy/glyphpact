@@ -1,0 +1,82 @@
+---
+import { artifacts, coordinationLock } from '../data/product';
+
+/**
+ * The generated output tree.
+ *
+ * Labels which artifacts are framework-neutral and which are Dart-specific,
+ * because that boundary is the honest answer to "can I use this outside
+ * Flutter". The scope is stated in words in each row's note, so the colour
+ * coding is reinforcement only.
+ */
+const scopeLabel = {
+  universal: 'framework-neutral',
+  flutter: 'Flutter only',
+  meta: 'build metadata',
+} as const;
+---
+
+<div class="gp-tree">
+  <div class="tree__head">lib/generated/app_icons/</div>
+  {
+    artifacts.map((artifact) => (
+      <div class="gp-tree__row">
+        <span class:list={['tree__path', `tree__path--${artifact.scope}`]}>
+          {artifact.path}
+        </span>
+        <span class="gp-tree__note">
+          <em class="tree__scope">{scopeLabel[artifact.scope]}</em>
+          {' '}
+          {artifact.note}
+        </span>
+      </div>
+    ))
+  }
+  <div class="tree__foot">
+    <span class="tree__path tree__path--sibling">../{coordinationLock}</span>
+    <span class="gp-tree__note">
+      Publication coordination file. A sibling of the output directory, not part
+      of the owned tree. Leave it in place and ignore it in version control.
+    </span>
+  </div>
+</div>
+
+<style>
+  .tree__head {
+    color: var(--text-muted);
+    margin-block-end: 0.5rem;
+  }
+
+  .tree__path {
+    color: var(--text);
+  }
+
+  .tree__path--universal {
+    color: var(--accent);
+  }
+
+  .tree__path--sibling {
+    color: var(--text-faint);
+  }
+
+  .tree__scope {
+    font-style: normal;
+    color: var(--text-muted);
+  }
+
+  .tree__foot {
+    margin-block-start: 0.9rem;
+    padding-block-start: 0.9rem;
+    border-block-start: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: minmax(14rem, auto) 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 40rem) {
+    .tree__foot {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+  }
+</style>

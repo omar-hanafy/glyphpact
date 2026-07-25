@@ -1,6 +1,20 @@
-# GlyphPact
+<p align="center">
+  <img src="brand/glyphpact-icon.svg" alt="" width="72" height="72">
+</p>
 
-**The deterministic SVG-to-Flutter icon compiler.**
+<h1 align="center">GlyphPact</h1>
+
+<p align="center"><strong>The deterministic SVG-to-Flutter icon compiler.</strong></p>
+
+<p align="center">
+  <a href="https://omar-hanafy.github.io/glyphpact/">Website</a>
+  &middot;
+  <a href="https://omar-hanafy.github.io/glyphpact/stable-codepoints/">Stable codepoints</a>
+  &middot;
+  <a href="https://omar-hanafy.github.io/glyphpact/flutter/">Flutter guide</a>
+  &middot;
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
 GlyphPact turns a directory of SVG files into a validated OpenType/CFF icon
 font and a const Dart `IconData` API. It keeps codepoints stable across pack
@@ -351,6 +365,16 @@ uv run pytest
 uv build
 ```
 
+The marketing site is a separate static Astro project in [`site/`](site/),
+deployed to GitHub Pages by `.github/workflows/pages.yml`:
+
+```bash
+cd site
+npm ci
+npm run verify   # type-check, brand and claim checks, build, link check
+npm run dev
+```
+
 See
 [CONTRIBUTING.md](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/CONTRIBUTING.md)
 for semantic and validation requirements.
@@ -364,6 +388,9 @@ subsetting rights.
 Configure `author`, `license`, `sourceUrl`, and `copyright` per icon when
 provenance matters. `ATTRIBUTION.md` carries supplied metadata for emitted
 glyphs and reports how many emitted icons have no declared provenance.
+
+Brand assets live in [`brand/`](brand/README.md), which is the single source of
+truth for the identity and documents how to replace it.
 
 See the
 [changelog](https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/CHANGELOG.md),

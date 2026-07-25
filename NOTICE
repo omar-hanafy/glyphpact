@@ -2,7 +2,7 @@ GlyphPact 1.0.1
 Copyright 2026 Omar Hanafy
 
 GlyphPact is an independent implementation built with open-source libraries.
-It does not include third-party icon or font assets.
+The distributed compiler does not include third-party icon or font assets.
 
 Runtime dependencies:
 
@@ -11,6 +11,14 @@ Runtime dependencies:
 - skia-pathops and lxml are licensed under the BSD 3-Clause License.
 - cssselect2, tinycss2, webencodings, and webcolors use BSD licenses.
 - The optional official MCP Python SDK is licensed under the MIT License.
+
+Marketing site (site/), not part of the distributed compiler:
+
+- Geist and Geist Mono, Copyright 2024 Vercel, Inc., are licensed under the
+  SIL Open Font License 1.1. The site self-hosts Latin subsets of the variable
+  fonts. The full license text is served at site/public/fonts/OFL.txt.
+- Astro, satori, and sharp are licensed under the MIT License and are build
+  dependencies only; no part of them is shipped to the browser.
 
 User-provided SVG artwork and pinned text fonts remain subject to their own
 licenses.

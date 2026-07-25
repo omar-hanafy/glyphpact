@@ -1,0 +1,66 @@
+---
+import { faqFor, type FaqEntry } from '../data/faq';
+import { path } from '../site.config';
+
+/**
+ * FAQ rendering.
+ *
+ * The visible answers and the FAQPage structured data are generated from the
+ * same `answer` strings in src/data/faq.ts, so the two cannot drift. The
+ * `jsonLd` helper below is exported for pages to place in the document head.
+ *
+ * Plain headings and paragraphs rather than a disclosure widget: an answer
+ * engine, a crawler, and Ctrl+F all see the text without needing to open
+ * anything, which is the entire point of publishing an FAQ.
+ */
+interface Props {
+  page: FaqEntry['pages'][number];
+  heading?: string;
+}
+
+const { page, heading = 'Questions' } = Astro.props;
+const entries = faqFor(page);
+
+const isInternal = (href: string) => href.startsWith('/');
+---
+
+<section class="gp-section" aria-labelledby="faq-heading">
+  <div class="gp-shell">
+    <div class="gp-head">
+      <p class="gp-annotation">FAQ</p>
+      <h2 id="faq-heading">{heading}</h2>
+    </div>
+
+    <div class="gp-faq">
+      {
+        entries.map((entry) => (
+          <article class="gp-faq__item" id={entry.id}>
+            <h3>{entry.question}</h3>
+            {entry.answer.map((para) => (
+              <p>{para}</p>
+            ))}
+            {entry.more && (
+              <p class="gp-faq__more">
+                <a href={isInternal(entry.more.href) ? path(entry.more.href) : entry.more.href}>
+                  {entry.more.label}
+                </a>
+              </p>
+            )}
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .gp-faq__more {
+    margin-block-start: 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .gp-faq__more a {
+    color: var(--accent);
+    text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+</style>

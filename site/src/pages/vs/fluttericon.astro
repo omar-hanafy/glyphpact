@@ -1,0 +1,229 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Faq from '../../components/Faq.astro';
+import ComparisonTable from '../../components/ComparisonTable.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import InstallCommand from '../../components/InstallCommand.astro';
+import NextLinks from '../../components/NextLinks.astro';
+import { path, routes } from '../../site.config';
+import { columnSets, VERIFIED_ON } from '../../data/comparison';
+import { articleSchema, breadcrumbSchema, faqSchema } from '../../lib/schema';
+
+const r = routes.vsFlutterIcon;
+/** Two levels only; see the note in vs/icomoon.astro. */
+const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'FlutterIcon.com comparison' }];
+const jsonLd = [
+  articleSchema('vsFlutterIcon'),
+  breadcrumbSchema(crumbs),
+  faqSchema('fluttericon'),
+];
+
+const compile = `glyphpact assets/icons \\
+  --output lib/generated/app_icons \\
+  --name AppIcons`;
+---
+
+<Base
+  title={r.title}
+  description={r.description}
+  canonical={r.href}
+  ogSlug="vsFlutterIcon"
+  jsonLd={jsonLd}
+>
+  <Breadcrumbs crumbs={crumbs} />
+
+  <article>
+    <header class="gp-shell gp-pagehead">
+      <p class="gp-annotation">Comparison</p>
+      <h1>GlyphPact and FlutterIcon.com, compared fairly</h1>
+      <p class="gp-lede">
+        Both turn SVG artwork into a Flutter icon font and a Dart icon class.
+        FlutterIcon.com does it in a hosted browser session with a library of
+        ready-made icon packs. GlyphPact does it as a local command with a
+        committed codepoint registry. The right answer depends on how often your
+        icon set changes and who changes it.
+      </p>
+    </header>
+
+    <section class="gp-section" aria-labelledby="what">
+      <div class="gp-shell gp-prose">
+        <h2 id="what">What FlutterIcon.com is</h2>
+        <p>
+          FlutterIcon.com is a Flutter-focused fork of
+          <a href="https://github.com/fontello/fontello">Fontello</a>, published as
+          <a href="https://github.com/ilikerobots/polyicon">ilikerobots/polyicon</a>
+          and MIT licensed. You pick icons from more than a dozen bundled
+          open-source webfonts, or drop in your own SVGs, and export a font plus a
+          Dart icon class. Its <code>config.json</code> records your selection,
+          including each glyph's code, and can be imported again later.
+        </p>
+        <p>
+          That bundled library is a genuine advantage and GlyphPact has no answer
+          to it. If you want a Material-adjacent icon and do not want to source
+          the artwork yourself, FlutterIcon hands it to you in about a minute.
+          GlyphPact only compiles SVG files you already have.
+        </p>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="model">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">The real difference</p>
+          <h2 id="model">A session you operate, or a command your build runs</h2>
+        </div>
+
+        <div class="gp-grid gp-grid--2">
+          <div class="gp-cell">
+            <h3>Hosted session</h3>
+            <p>
+              Icon changes go through a browser: open the site, restore the
+              previous <code>config.json</code>, adjust the selection, export,
+              unzip, copy files into the project. The configuration is posted to
+              the service, which is where the session lives. Correct output
+              depends on someone performing those steps correctly.
+            </p>
+            <p>
+              A third-party Node CLI, <code>fontello-cli</code>, can install a
+              config against a host, which helps. It still talks to the hosted
+              service, and there is no check that fails when what is committed no
+              longer matches your sources.
+            </p>
+          </div>
+          <div class="gp-cell">
+            <h3>Local compile</h3>
+            <p>
+              Icon changes are file changes. Add an SVG, run one command, commit
+              the result. The codepoint registry is a file in the repository, so a
+              reviewer sees assignments in the diff, and CI can rebuild and
+              compare on every push.
+            </p>
+            <p>
+              Nothing leaves the machine, and rebuilds are byte-identical given
+              the same inputs, so a regenerated font produces no spurious diff.
+            </p>
+          </div>
+        </div>
+
+        <div style="max-width: 46rem; margin-block-start: 2rem">
+          <CodeBlock title="The whole workflow" copy={compile}>{compile}</CodeBlock>
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="codepoints">
+      <div class="gp-shell gp-prose">
+        <h2 id="codepoints">Codepoints</h2>
+        <p>
+          Fontello's <code>config.json</code> stores a code per glyph, so
+          re-importing it preserves your assignments. Like IcoMoon's
+          <code>selection.json</code>, this is a real mechanism whose reliability
+          depends on a human keeping the file and importing it every time.
+        </p>
+        <p>
+          GlyphPact differs in three ways that matter once more than one person
+          touches the icon set. The registry is written automatically into the
+          output rather than downloaded and re-uploaded. Deleted icons leave
+          permanent tombstones instead of releasing codepoints for reuse. And
+          <code>--check</code> gives CI a way to prove the committed font still
+          matches its sources, exiting <code>3</code> when it does not.
+        </p>
+        <p>
+          <a href={path(routes.codepoints.href)}
+            >The codepoint registry explained, with a real lock file diff</a
+          >
+        </p>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="fidelity">
+      <div class="gp-shell gp-prose">
+        <h2 id="fidelity">Unsupported SVG features</h2>
+        <p>
+          Neither FlutterIcon.com nor the pub.dev package
+          <a href="https://pub.dev/packages/icon_font_generator">icon_font_generator</a>
+          publishes a policy for SVG that a monochrome outline font cannot
+          represent. That does not mean they handle it badly; it means the
+          behaviour is not specified, so you learn it by finding out.
+        </p>
+        <p>
+          GlyphPact specifies it. Every source lands in exactly one of three
+          outcomes, both policy axes default to <code>error</code>, and every
+          approximation or omission is reported with a diagnostic code, a
+          classification, an action, and the feature responsible. A build that
+          would quietly degrade an icon fails instead, until you say otherwise.
+        </p>
+        <p class="gp-note gp-note--lossy">
+          <strong>This cuts both ways.</strong> Strict defaults mean GlyphPact
+          will reject a pack that another generator would happily compile. If you
+          have a pile of decorative SVGs with gradients and filters and you just
+          want <em>something</em> rendered, GlyphPact will feel obstructive. That
+          is the intended trade, not an oversight.
+        </p>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="table">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Side by side</p>
+          <h2 id="table">The full comparison</h2>
+          <p class="gp-lede">
+            <code>icon_font_generator</code> is included because it is the other
+            common answer to this problem: a pure-Dart CLI with no hosted
+            component.
+          </p>
+        </div>
+        <ComparisonTable
+          columns={columnSets.fluttericon}
+          caption="GlyphPact v1.0.0 against the two most common Flutter icon-font alternatives."
+        />
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="try">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Try it</p>
+          <h2 id="try">Compile a pack you already have</h2>
+        </div>
+        <div style="max-width: 40rem">
+          <InstallCommand explainPin />
+        </div>
+        <p class="gp-muted" style="margin-block-start: 1.25rem; max-width: 62ch">
+          If you currently use FlutterIcon.com, export your set once, commit the
+          SVG sources, and compile from those. GlyphPact does not care what drew
+          them.
+        </p>
+
+        <p class="gp-verified" style="margin-block-start: 2rem">
+          <strong>Verified on {VERIFIED_ON}</strong>
+          <span>
+            against <a href="https://www.fluttericon.com/">fluttericon.com</a>,
+            <a href="https://github.com/ilikerobots/polyicon">ilikerobots/polyicon</a>,
+            <a href="https://github.com/fontello/fontello">fontello/fontello</a>,
+            and
+            <a href="https://pub.dev/packages/icon_font_generator"
+              >pub.dev/packages/icon_font_generator</a
+            >. If any of this has changed, it should be corrected.
+          </span>
+        </p>
+      </div>
+    </section>
+  </article>
+
+  <Faq page="fluttericon" heading="Questions about the comparison" />
+
+  <NextLinks keys={['flutter', 'codepoints', 'vsIcomoon']} />
+</Base>
+
+<style>
+  .gp-pagehead {
+    padding-block: 2.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    max-width: 48rem;
+  }
+</style>

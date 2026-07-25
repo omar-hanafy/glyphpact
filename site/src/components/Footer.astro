@@ -1,0 +1,74 @@
+---
+import { site, path, routes } from '../site.config';
+import BrandMark from './BrandMark.astro';
+
+interface Props {
+  version: string;
+}
+const { version } = Astro.props;
+---
+
+<footer class="gp-footer">
+  <div class="gp-shell">
+    <div class="gp-footer__grid">
+      <div>
+        <h2>Pages</h2>
+        <ul>
+          <li><a href={path(routes.home.href)}>Overview</a></li>
+          <li><a href={path(routes.codepoints.href)}>Stable codepoints</a></li>
+          <li><a href={path(routes.flutter.href)}>Flutter integration</a></li>
+          <li><a href={path(routes.vsIcomoon.href)}>Compared with IcoMoon</a></li>
+          <li><a href={path(routes.vsFlutterIcon.href)}>Compared with FlutterIcon.com</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2>Documentation</h2>
+        <ul>
+          <li><a href={site.links.readme}>README and quick start</a></li>
+          <li><a href={site.links.svgProfile}>Supported SVG profile</a></li>
+          <li><a href={site.links.flutterAdoption}>Flutter adoption guide</a></li>
+          <li><a href={site.links.architecture}>Architecture</a></li>
+          <li><a href={site.links.benchmarking}>Benchmarking your own pack</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2>Reference</h2>
+        <ul>
+          <li><a href={site.links.lockSchema}>Lock file schema</a></li>
+          <li><a href={site.links.configSchema}>Config schema</a></li>
+          <li><a href={site.links.reportSchema}>Report schema</a></li>
+          <li><a href={site.links.pluginGuide}>Claude Code and Codex plugin</a></li>
+          <li><a href={path('/llms.txt')}>llms.txt</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2>Project</h2>
+        <ul>
+          <li><a href={site.links.repo}>Source on GitHub</a></li>
+          <li><a href={site.links.releases}>Releases</a></li>
+          <li><a href={site.links.changelog}>Changelog</a></li>
+          <li><a href={site.links.issues}>Issue tracker</a></li>
+          <li><a href={site.links.security}>Security policy</a></li>
+          <li><a href={site.links.contributing}>Contributing</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="gp-footer__base">
+      <BrandMark size="1.1rem" tone="mono" />
+      <span>{site.name} v{version}</span>
+      <span>
+        <a href={site.links.license}>{site.license} licensed</a>
+      </span>
+      <span>
+        Built by <a href={site.author.url}>{site.author.name}</a>
+      </span>
+      <span>
+        Type set in <a href={path('/fonts/OFL.txt')}>Geist</a>, SIL OFL 1.1
+      </span>
+    </div>
+  </div>
+</footer>

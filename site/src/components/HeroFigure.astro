@@ -1,0 +1,204 @@
+---
+import { back } from '../data/glyphs';
+
+/**
+ * The hero drafting figure: one glyph on its em square, measured, with its
+ * codepoint bound underneath.
+ *
+ * Inline SVG so it is crisp at any size, styleable by the colour scheme, and
+ * readable by a crawler. Every fact it carries - the glyph, its source file,
+ * its codepoint - is live text in the markup, not baked into artwork, and the
+ * whole figure gets one accessible description rather than announcing dozens
+ * of decorative ticks.
+ *
+ * Geometry: a 24-unit glyph scaled 10x onto a 240-unit em square, inset 48
+ * within a 336-unit canvas. Control points mark real vertices of the outline.
+ */
+
+/** Real vertices of the back-arrow outline, in glyph (24-unit) space. */
+const controlPoints = [
+  [12, 4],
+  [4, 12],
+  [12, 20],
+  [20, 11],
+  [20, 13],
+  [7.83, 11],
+];
+
+const INSET = 48;
+const SCALE = 10;
+const EM = 240;
+const toCanvas = (v: number) => INSET + v * SCALE;
+
+/** Measurement ticks along the top and left edges, every 30 units. */
+const ticks = [0, 30, 60, 90, 120, 150, 180, 210, 240];
+---
+
+<figure class="gp-figure">
+  <svg
+    viewBox="0 0 336 392"
+    role="img"
+    aria-labelledby="hero-fig-title hero-fig-desc"
+    class="gp-figure__svg"
+  >
+    <title id="hero-fig-title">
+      The glyph for arrows/back.svg on its em square, bound to codepoint U+E000
+    </title>
+    <desc id="hero-fig-desc">
+      A left-pointing arrow drawn as a filled outline inside a measured em
+      square, with registration marks at the corners and control points on the
+      outline's vertices. A plate below the square reads U+E000 and marks the
+      assignment as locked.
+    </desc>
+
+    {/* em-square grid, eighths */}
+    <g class="fig-grid">
+      {
+        [1, 2, 3, 4, 5, 6, 7].map((i) => (
+          <>
+            <line
+              x1={INSET + (EM / 8) * i}
+              y1={INSET}
+              x2={INSET + (EM / 8) * i}
+              y2={INSET + EM}
+            />
+            <line
+              x1={INSET}
+              y1={INSET + (EM / 8) * i}
+              x2={INSET + EM}
+              y2={INSET + (EM / 8) * i}
+            />
+          </>
+        ))
+      }
+    </g>
+
+    {/* measurement ticks outside the square */}
+    <g class="fig-tick">
+      {
+        ticks.map((t) => (
+          <>
+            <line x1={INSET + t} y1={INSET - 8} x2={INSET + t} y2={INSET - 2} />
+            <line x1={INSET - 8} y1={INSET + t} x2={INSET - 2} y2={INSET + t} />
+          </>
+        ))
+      }
+    </g>
+
+    {/* em square */}
+    <rect x={INSET} y={INSET} width={EM} height={EM} class="fig-em" />
+
+    {/* registration marks, echoing the identity mark */}
+    <g class="fig-reg">
+      <path d="M40 40h26v6H46v20h-6Z" />
+      <path d="M296 40h-26v6h20v20h6Z" />
+      <path d="M40 296h26v-6H46v-20h-6Z" />
+      <path d="M296 296h-26v-6h20v-20h6Z" />
+    </g>
+
+    {/* the glyph outline */}
+    <g transform={`translate(${INSET} ${INSET}) scale(${SCALE})`}>
+      <path d={back.path} class="fig-glyph" />
+    </g>
+
+    {/* control points on real vertices */}
+    <g class="fig-node">
+      {
+        controlPoints.map(([x, y]) => (
+          <rect x={toCanvas(x) - 3.5} y={toCanvas(y) - 3.5} width="7" height="7" />
+        ))
+      }
+    </g>
+
+    {/* the codepoint plate */}
+    <g class="fig-plate">
+      <line x1={INSET} y1="316" x2="296" y2="316" />
+      <text x={INSET} y="342" class="fig-label">arrows/back.svg</text>
+      <text x={INSET} y="368" class="fig-code">U+E000</text>
+      {/* Right-anchored so a wider fallback font grows away from the edge. */}
+      <g transform="translate(228 352)">
+        <path d="M8 0 16 8 8 16 0 8Z" class="fig-locked-node" />
+      </g>
+      <text x="296" y="368" text-anchor="end" class="fig-locked">LOCKED</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .gp-figure {
+    width: 100%;
+    max-width: 24rem;
+  }
+
+  .gp-figure__svg {
+    width: 100%;
+    height: auto;
+    /* Clipped deliberately. The labels use the mono face, and with
+       `font-display: swap` a wider fallback renders first; letting that bleed
+       outside the viewBox put a horizontal scrollbar on the whole page at
+       narrow widths. Everything the figure needs to show is inside the box. */
+    overflow: hidden;
+  }
+
+  .fig-grid line {
+    stroke: var(--grid);
+    stroke-width: 1;
+  }
+
+  .fig-tick line {
+    stroke: var(--rule-strong);
+    stroke-width: 1;
+  }
+
+  .fig-em {
+    fill: none;
+    stroke: var(--rule-strong);
+    stroke-width: 1;
+  }
+
+  .fig-reg {
+    fill: var(--text-faint);
+  }
+
+  .fig-glyph {
+    fill: var(--text);
+  }
+
+  .fig-node rect {
+    fill: var(--bg);
+    stroke: var(--accent);
+    stroke-width: 1.5;
+  }
+
+  .fig-plate line {
+    stroke: var(--rule);
+    stroke-width: 1;
+  }
+
+  .fig-label,
+  .fig-code,
+  .fig-locked {
+    font-family: var(--gp-font-mono);
+    fill: var(--text-faint);
+  }
+
+  .fig-label {
+    font-size: 13px;
+  }
+
+  .fig-code {
+    font-size: 22px;
+    fill: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .fig-locked {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    fill: var(--accent);
+  }
+
+  .fig-locked-node {
+    fill: var(--accent);
+  }
+</style>
