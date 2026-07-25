@@ -111,9 +111,11 @@ const fullTitle = title.includes(site.name) ? title : `${title} - ${site.name}`;
     </main>
     <Footer version={RELEASE.version} />
 
-    {/* The site's only shipped script. Delegated, so one listener covers every
-        copy control on the page regardless of how many there are. */}
+    {/* Shipped behaviour is progressively enhanced. The semantic table and
+        every copyable value remain available when JavaScript is disabled. */}
     <script>
+      import { mountStickyTables } from '../lib/stickyTables';
+
       const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
 
       document.addEventListener('click', async (event) => {
@@ -162,6 +164,8 @@ const fullTitle = title.includes(site.name) ? title : `${title} - ${site.name}`;
         }, 2000);
         copyResetTimers.set(button, resetTimer);
       });
+
+      mountStickyTables();
     </script>
   </body>
 </html>
