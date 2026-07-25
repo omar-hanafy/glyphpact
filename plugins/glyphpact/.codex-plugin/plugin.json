@@ -23,6 +23,9 @@
     "longDescription": "Audit, compile, check, wire, and visually verify large SVG collections as deterministic Flutter IconData fonts while preserving stable codepoints and surfacing every approximation or unsupported source.",
     "developerName": "Omar Hanafy",
     "category": "Developer Tools",
+    "brandColor": "#22D3EE",
+    "logo": "./assets/glyphpact-icon.svg",
+    "composerIcon": "./assets/glyphpact-mark.svg",
     "capabilities": [
       "Read",
       "Write"

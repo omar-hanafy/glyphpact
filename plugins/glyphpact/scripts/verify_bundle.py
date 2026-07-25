@@ -17,6 +17,13 @@ from _bundle import (
     verify_plugin_bundle,
 )
 
+_BRAND_ASSETS = ("glyphpact-icon.svg", "glyphpact-mark.svg")
+_CODEX_BRAND_INTERFACE = {
+    "brandColor": "#22D3EE",
+    "logo": "./assets/glyphpact-icon.svg",
+    "composerIcon": "./assets/glyphpact-mark.svg",
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate the GlyphPact plugin bundle.")
@@ -49,6 +56,13 @@ def _verify_manifests(root: Path) -> None:
         if manifest.get("mcpServers") != "./.mcp.json":
             raise BundleError(f"{label} manifest must load ./.mcp.json.")
 
+    interface = codex.get("interface")
+    if not isinstance(interface, dict):
+        raise BundleError("Codex manifest interface must be an object.")
+    for key, expected in _CODEX_BRAND_INTERFACE.items():
+        if interface.get(key) != expected:
+            raise BundleError(f"Codex interface.{key} must be {expected!r}.")
+
     mcp = _load_json(root / ".mcp.json")
     server = mcp.get("mcpServers", {}).get("glyphpact")
     if not isinstance(server, dict) or server.get("command") != "uv":
@@ -70,6 +84,41 @@ def _verify_manifests(root: Path) -> None:
     ):
         if required not in args:
             raise BundleError(f"MCP config is missing required argument {required!r}.")
+
+
+def _verify_brand_assets(root: Path) -> bool:
+    assets = root / "assets"
+    for filename in _BRAND_ASSETS:
+        asset = assets / filename
+        if not asset.is_file() or asset.is_symlink():
+            raise BundleError(f"Plugin brand asset must be a regular file: {asset}.")
+        try:
+            content = asset.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            raise BundleError(f"Cannot read plugin brand asset {asset}: {error}") from error
+        if "<svg" not in content or "viewBox=" not in content:
+            raise BundleError(f"Plugin brand asset is not a self-contained SVG: {asset}.")
+
+    repository_brand = root.parent.parent / "brand"
+    if not repository_brand.exists():
+        return False
+    if not repository_brand.is_dir():
+        raise BundleError(f"Repository brand path is not a directory: {repository_brand}.")
+    for filename in _BRAND_ASSETS:
+        canonical = repository_brand / filename
+        plugin_copy = assets / filename
+        try:
+            canonical_bytes = canonical.read_bytes()
+            plugin_bytes = plugin_copy.read_bytes()
+        except OSError as error:
+            raise BundleError(
+                f"Cannot compare canonical plugin brand asset {filename}: {error}"
+            ) from error
+        if plugin_bytes != canonical_bytes:
+            raise BundleError(
+                f"Plugin brand asset {plugin_copy} does not match canonical {canonical}."
+            )
+    return True
 
 
 def _plugin_entry(marketplace: dict[str, Any], path: Path) -> dict[str, Any]:
@@ -125,6 +174,7 @@ def main() -> int:
     args = parse_args()
     root = plugin_root()
     _verify_manifests(root)
+    canonical_brand_verified = _verify_brand_assets(root)
     marketplaces_verified = _verify_marketplaces(root)
     identity = verify_plugin_bundle(root, allow_missing_wheel=args.allow_missing_wheel)
     result: dict[str, Any] = {
@@ -133,6 +183,7 @@ def main() -> int:
         "runtimeRequirements": list(EXPECTED_MCP_REQUIREMENTS),
         "wheel": "missing-development-artifact" if identity is None else EXPECTED_WHEEL_FILENAME,
         "marketplaces": "verified" if marketplaces_verified else "not-present-in-plugin-cache",
+        "brandAssets": "canonical-match" if canonical_brand_verified else "self-contained",
     }
     if identity is not None:
         result.update(

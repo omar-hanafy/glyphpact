@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,7 @@ from _bundle import (  # noqa: E402
     verify_plugin_bundle,
     verify_source_matches_bundle,
 )
+from verify_bundle import _verify_brand_assets, _verify_manifests  # noqa: E402
 
 EXPECTED_DIST_INFO = f"glyphpact-{EXPECTED_VERSION}.dist-info"
 
@@ -131,6 +133,25 @@ class BundleTest(unittest.TestCase):
                 (root / "dist" / EXPECTED_CHECKSUM_FILENAME).read_text(),
                 f"{expected_digest}  {EXPECTED_WHEEL_FILENAME}\n",
             )
+
+    def test_repository_brand_assets_match_canonical_sources(self) -> None:
+        _verify_manifests(PLUGIN_ROOT)
+        self.assertTrue(_verify_brand_assets(PLUGIN_ROOT))
+
+    def test_brand_asset_drift_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            canonical = PLUGIN_ROOT.parent.parent / "brand"
+            plugin = repository / "plugins" / "glyphpact"
+            shutil.copytree(PLUGIN_ROOT / "assets", plugin / "assets")
+            shutil.copytree(canonical, repository / "brand")
+            (plugin / "assets" / "glyphpact-mark.svg").write_text(
+                '<svg viewBox="0 0 1 1"><path d="M0 0h1v1H0z"/></svg>',
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(BundleError, "does not match canonical"):
+                _verify_brand_assets(plugin)
 
     def test_fixture_exposes_importable_console_targets(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

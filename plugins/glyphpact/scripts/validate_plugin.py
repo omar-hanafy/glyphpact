@@ -8,7 +8,12 @@ from pathlib import Path
 from typing import Any
 
 from _bundle import BundleError, plugin_root, verify_plugin_bundle
-from verify_bundle import _load_json, _verify_manifests, _verify_marketplaces
+from verify_bundle import (
+    _load_json,
+    _verify_brand_assets,
+    _verify_manifests,
+    _verify_marketplaces,
+)
 
 
 def _require_string(value: Any, label: str) -> str:
@@ -115,6 +120,8 @@ def _validate_text_hygiene(root: Path) -> None:
 def main() -> int:
     root = plugin_root()
     _verify_manifests(root)
+    if not _verify_brand_assets(root):
+        raise BundleError("Repository checkout is missing canonical brand assets.")
     if not _verify_marketplaces(root):
         raise BundleError("Repository marketplace catalogs are missing.")
     _validate_codex_interface(root)
@@ -131,6 +138,7 @@ def main() -> int:
                 "version": identity.version,
                 "wheelSha256": identity.sha256,
                 "marketplaces": "verified",
+                "brandAssets": "canonical-match",
                 "skill": "sync-flutter-svg-icons",
             },
             indent=2,
