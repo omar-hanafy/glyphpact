@@ -1160,12 +1160,6 @@ td {
   vertical-align: top;
 }
 
-/* Not sticky, on purpose. A sticky header cell inside a horizontally scrolling
-   wrapper is positioned against the document's vertical scrollport rather than
-   the wrapper, so it escapes the wrapper's clipping and adds the table's full
-   width to the page's scroll extent - a horizontal scrollbar on the whole site
-   at narrow widths. These tables are also short enough that a sticky header
-   would earn little, and the site header is already sticky at the top. */
 thead th {
   background: var(--bg-raised);
   font-size: 0.74rem;
@@ -1174,6 +1168,29 @@ thead th {
   font-weight: 500;
   color: var(--text-faint);
   white-space: nowrap;
+}
+
+.gp-table-pin {
+  position: fixed;
+  z-index: 45;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg-raised);
+  border-block-end: 1px solid var(--rule-strong);
+  box-shadow: 0 0.65rem 1.25rem rgb(0 0 0 / 12%);
+}
+
+.gp-table-pin[hidden] {
+  display: none;
+}
+
+.gp-table-pin table {
+  margin: 0;
+  will-change: transform;
+}
+
+.gp-table-pin thead td {
+  background: var(--bg-raised);
 }
 
 tbody th {

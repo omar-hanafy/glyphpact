@@ -216,6 +216,113 @@ test('Flutter quick start is a two-by-two desktop grid and a mobile sequence', a
   expect(mobile[3].y).toBeGreaterThan(mobile[2].y);
 });
 
+test('every table header pins below the navigation and releases at its table boundary', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  for (const { route, count } of [
+    { route: '/glyphpact/', count: 3 },
+    { route: '/glyphpact/vs/icomoon/', count: 1 },
+    { route: '/glyphpact/vs/fluttericon/', count: 1 },
+  ]) {
+    await page.goto(route);
+    const wrappers = page.locator('.gp-table-wrap');
+    const pins = page.locator('.gp-table-pin');
+    await expect(wrappers).toHaveCount(count);
+    await expect(pins).toHaveCount(count);
+
+    for (let index = 0; index < count; index += 1) {
+      const wrapper = wrappers.nth(index);
+      const pin = pins.nth(index);
+      const activationScroll = await wrapper.evaluate((element) => {
+        const head = element.querySelector('thead');
+        const navigation = document.querySelector('.gp-header');
+        if (!head || !navigation) throw new Error('Expected table head and navigation');
+
+        return (
+          window.scrollY +
+          head.getBoundingClientRect().top -
+          navigation.getBoundingClientRect().bottom +
+          12
+        );
+      });
+
+      await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), activationScroll);
+      await expect(pin).toBeVisible();
+
+      const pinnedGeometry = await pin.evaluate((element) => ({
+        top: element.getBoundingClientRect().top,
+        hidden: (element as HTMLElement).hidden,
+      }));
+      const navigationBottom = await page
+        .locator('.gp-header')
+        .evaluate((element) => element.getBoundingClientRect().bottom);
+
+      expect(pinnedGeometry.hidden).toBe(false);
+      expect(Math.abs(pinnedGeometry.top - navigationBottom)).toBeLessThan(1);
+
+      const releaseScroll = await wrapper.evaluate(
+        (element) => window.scrollY + element.getBoundingClientRect().bottom + 1,
+      );
+      await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), releaseScroll);
+      await expect(pin).toBeHidden();
+    }
+  }
+});
+
+test('a pinned mobile table header stays aligned while the table scrolls horizontally', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 844 });
+  await page.goto('/glyphpact/vs/fluttericon/');
+
+  const wrapper = page.locator('.gp-table-wrap');
+  const pin = page.locator('.gp-table-pin');
+  await wrapper.evaluate((element) => {
+    element.scrollLeft = 180;
+  });
+
+  const activationScroll = await wrapper.evaluate((element) => {
+    const head = element.querySelector('thead');
+    const navigation = document.querySelector('.gp-header');
+    if (!head || !navigation) throw new Error('Expected table head and navigation');
+
+    return (
+      window.scrollY +
+      head.getBoundingClientRect().top -
+      navigation.getBoundingClientRect().bottom +
+      12
+    );
+  });
+  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), activationScroll);
+  await expect(pin).toBeVisible();
+
+  const alignment = await page.evaluate(() => {
+    const sourceCells = Array.from(
+      document.querySelectorAll('.gp-table-wrap thead tr:first-child > *'),
+    );
+    const pinnedCells = Array.from(
+      document.querySelectorAll('.gp-table-pin thead tr:first-child > *'),
+    );
+
+    return sourceCells.map((source, index) => {
+      const sourceRect = source.getBoundingClientRect();
+      const pinnedRect = pinnedCells[index]?.getBoundingClientRect();
+      return {
+        x: Math.abs(sourceRect.x - (pinnedRect?.x ?? 0)),
+        width: Math.abs(sourceRect.width - (pinnedRect?.width ?? 0)),
+      };
+    });
+  });
+
+  expect(alignment.length).toBeGreaterThan(1);
+  for (const delta of alignment) {
+    expect(delta.x).toBeLessThan(1);
+    expect(delta.width).toBeLessThan(1);
+  }
+});
+
 for (const colorScheme of ['dark', 'light'] as const) {
   test(`secondary pages have no detectable accessibility violations in ${colorScheme} mode`, async ({
     page,
