@@ -204,6 +204,120 @@ def test_cli_json_reports_stable_diagnostic(tmp_path, capsys) -> None:
     }
 
 
+def test_cli_internal_batch_error_uses_exit_1(tmp_path, monkeypatch, capsys) -> None:
+    error = BatchError(
+        (
+            Diagnostic(
+                "INTERNAL_CONVERSION_ERROR",
+                "Synthetic internal conversion error.",
+                source="icon.svg",
+            ),
+        )
+    )
+
+    def fail_build(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(cli_module, "build", fail_build)
+
+    result = main(
+        [
+            str(tmp_path / "icons"),
+            "--output",
+            str(tmp_path / "generated"),
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert result == 1
+    assert payload["errors"][0]["code"] == "INTERNAL_CONVERSION_ERROR"
+
+
+def test_cli_mixed_internal_and_input_batch_uses_exit_1(tmp_path, monkeypatch, capsys) -> None:
+    error = BatchError(
+        (
+            Diagnostic("SVG_PATH_INVALID", "Synthetic input error.", source="input.svg"),
+            Diagnostic(
+                "INTERNAL_CONVERSION_ERROR",
+                "Synthetic internal conversion error.",
+                source="internal.svg",
+            ),
+        )
+    )
+
+    def fail_build(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(cli_module, "build", fail_build)
+
+    result = main(
+        [
+            str(tmp_path / "icons"),
+            "--output",
+            str(tmp_path / "generated"),
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert result == 1
+    assert {diagnostic["code"] for diagnostic in payload["errors"]} == {
+        "INTERNAL_CONVERSION_ERROR",
+        "SVG_PATH_INVALID",
+    }
+
+
+def test_cli_direct_internal_error_uses_exit_1(tmp_path, monkeypatch, capsys) -> None:
+    error = IconFontError(
+        "INTERNAL_POLICY_VIOLATION",
+        "Synthetic internal policy violation.",
+    )
+
+    def fail_build(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(cli_module, "build", fail_build)
+
+    result = main(
+        [
+            str(tmp_path / "icons"),
+            "--output",
+            str(tmp_path / "generated"),
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert result == 1
+    assert payload["errors"][0]["code"] == "INTERNAL_POLICY_VIOLATION"
+
+
+def test_cli_malformed_xml_uses_input_failure_exit_2(tmp_path, capsys) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "broken.svg", "<svg>")
+
+    result = main(
+        [
+            str(inputs),
+            "--output",
+            str(output),
+            "--name",
+            "CliIcons",
+            "--jobs",
+            "1",
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert result == 2
+    assert payload["errors"][0]["code"] == "SVG_XML_MALFORMED"
+    assert payload["errors"][0]["source"] == "broken.svg"
+    assert not output.exists()
+
+
 def test_cli_check_drift_uses_exit_3(tmp_path, simple_svg: str, capsys) -> None:
     inputs = tmp_path / "icons"
     output = tmp_path / "generated"

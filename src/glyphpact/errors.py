@@ -326,7 +326,8 @@ def as_diagnostic(error: Exception, *, source: str | None = None) -> Diagnostic:
         )
     return Diagnostic(
         code="INTERNAL_CONVERSION_ERROR",
-        message=str(error) or error.__class__.__name__,
+        message="An unexpected internal error occurred while converting this SVG.",
         source=source,
-        hint="Re-run with --verbose and report this input if the error is reproducible.",
+        hint="Report this input and diagnostic if the failure is reproducible.",
+        details={"exceptionType": error.__class__.__name__},
     )

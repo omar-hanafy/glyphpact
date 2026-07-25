@@ -842,6 +842,77 @@ def test_environment_dependent_transform_length_is_typed(tmp_path: Path) -> None
     assert caught.value.diagnostic.code == "SVG_TRANSFORM_ENVIRONMENT_UNREPRESENTABLE"
 
 
+@pytest.mark.parametrize(
+    "view_box",
+    [
+        "0, 0, 24, 24",
+        " 0 0 24 24 ",
+        "0,&#9;0,&#10;24, 24",
+        "+0.00e0, -0E+0, 2.400e1, 24.",
+    ],
+    ids=["comma-space", "surrounding-space", "mixed-whitespace", "scientific"],
+)
+def test_valid_root_viewbox_separators_are_lossless(tmp_path: Path, view_box: str) -> None:
+    authored = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}">'
+        '<rect width="24" height="24"/></svg>'
+    )
+    canonical = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+        '<rect width="24" height="24"/></svg>'
+    )
+    _assert_equivalent(_compile(tmp_path, authored), _compile(tmp_path, canonical))
+
+
+def test_valid_nested_svg_viewbox_separators_are_lossless(tmp_path: Path) -> None:
+    authored = """
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <svg x="2" y="2" width="20" height="20" viewBox="0, 0, 10, 10">
+          <rect width="10" height="10"/>
+        </svg>
+      </svg>
+    """
+    canonical = authored.replace('viewBox="0, 0, 10, 10"', 'viewBox="0 0 10 10"')
+    _assert_equivalent(_compile(tmp_path, authored), _compile(tmp_path, canonical))
+
+
+def test_valid_symbol_viewbox_separators_are_lossless(tmp_path: Path) -> None:
+    authored = """
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <defs>
+          <symbol id="tile" viewBox="0, 0, 10, 10">
+            <rect width="10" height="10"/>
+          </symbol>
+        </defs>
+        <use href="#tile" width="20" height="20"/>
+      </svg>
+    """
+    canonical = authored.replace('viewBox="0, 0, 10, 10"', 'viewBox="0 0 10 10"')
+    _assert_equivalent(_compile(tmp_path, authored), _compile(tmp_path, canonical))
+
+
+@pytest.mark.parametrize(
+    "view_box",
+    [
+        "0,,0,24,24",
+        ",0 0 24 24",
+        "0 0 24 24,",
+        "0 0 24, ,24",
+    ],
+    ids=["double-comma", "leading-comma", "trailing-comma", "empty-component"],
+)
+def test_viewbox_normalization_does_not_repair_malformed_commas(
+    tmp_path: Path, view_box: str
+) -> None:
+    content = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}">'
+        '<rect width="24" height="24"/></svg>'
+    )
+    with pytest.raises(IconFontError) as caught:
+        _compile(tmp_path, content)
+    assert caught.value.diagnostic.code == "SVG_VIEWBOX_INVALID"
+
+
 def test_root_absolute_css_lengths_are_lossless_but_host_percentages_need_embedding(
     tmp_path: Path,
 ) -> None:
@@ -862,6 +933,59 @@ def test_root_absolute_css_lengths_are_lossless_but_host_percentages_need_embedd
         _compile(tmp_path, malformed)
     assert type(malformed_caught.value) is IconFontError
     assert malformed_caught.value.diagnostic.code == "SVG_ROOT_LENGTH_INVALID"
+
+
+@pytest.mark.parametrize(
+    ("dimensions", "preserve"),
+    [
+        ('width="100%" height="100%"', ""),
+        ('width="100%" height="100%"', ' preserveAspectRatio="xMidYMid meet"'),
+        ('width="100%" height="100%"', ' preserveAspectRatio="none"'),
+        ('width="100%" height="100%"', ' preserveAspectRatio="xMidYMid slice"'),
+        ('width="50%" height="100%"', ""),
+        ('width="10" height="100%"', ""),
+    ],
+    ids=[
+        "default-meet",
+        "explicit-meet",
+        "none",
+        "slice",
+        "mixed-percentages",
+        "numeric-width-percentage-height",
+    ],
+)
+def test_root_percentage_viewports_are_unrepresentable_without_embedding_dimensions(
+    tmp_path: Path,
+    dimensions: str,
+    preserve: str,
+) -> None:
+    content = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" {dimensions}{preserve} '
+        'viewBox="0 0 10 10"><rect width="10" height="10"/></svg>'
+    )
+    with pytest.raises(SvgFeatureError) as caught:
+        _compile(tmp_path, content)
+    assert caught.value.classification is SvgFeatureClass.UNREPRESENTABLE
+    assert caught.value.feature == "root-external-viewport"
+    assert caught.value.diagnostic.code == "SVG_ROOT_VIEWPORT_UNREPRESENTABLE"
+    assert caught.value.diagnostic.hint == (
+        "Provide numeric or absolute root dimensions. Remove responsive dimensions "
+        "only if the viewBox itself is the intended icon canvas."
+    )
+
+
+def test_root_default_meet_mapping_depends_on_the_resolved_canvas(tmp_path: Path) -> None:
+    template = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+        'viewBox="0 0 10 10"><rect width="10" height="10"/></svg>'
+    )
+    square = _compile(tmp_path, template.format(width=10, height=10))
+    wide = _compile(tmp_path, template.format(width=20, height=10))
+
+    assert square.view_box == pytest.approx((0, 0, 10, 10))
+    assert square.bounds == pytest.approx((0, 0, 10, 10))
+    assert wide.view_box == pytest.approx((0, 0, 20, 10))
+    assert wide.bounds == pytest.approx((5, 0, 15, 10))
 
 
 def test_zero_sized_viewbox_is_typed_as_an_unrepresentable_empty_icon(tmp_path: Path) -> None:

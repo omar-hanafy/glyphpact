@@ -44,7 +44,7 @@ jobs:
             exit 1
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
-      - run: uv run python plugins/glyphpact/scripts/sync_wheel.py --check dist/glyphpact-1.0.0-py3-none-any.whl
+      - run: uv run python plugins/glyphpact/scripts/sync_wheel.py --check dist/glyphpact-${{ steps.version.outputs.version }}-py3-none-any.whl
       - run: uv run pytest plugins/glyphpact/tests
       - run: uv run python plugins/glyphpact/scripts/validate_plugin.py
       - name: Smoke-test the packaged MCP from a copied plugin cache

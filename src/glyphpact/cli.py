@@ -240,6 +240,10 @@ def _emit_errors(diagnostics: Sequence[Diagnostic], *, json_output: bool) -> boo
     return True
 
 
+def _contains_internal_error(diagnostics: Sequence[Diagnostic]) -> bool:
+    return any(diagnostic.code.startswith("INTERNAL_") for diagnostic in diagnostics)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = _parser()
     raw_args = list(argv) if argv is not None else sys.argv[1:]
@@ -259,10 +263,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(_render_success(result))
         return 0
     except BatchError as error:
-        return 2 if _emit_errors(error.diagnostics, json_output=json_output) else 1
+        emitted = _emit_errors(error.diagnostics, json_output=json_output)
+        return 1 if not emitted or _contains_internal_error(error.diagnostics) else 2
     except IconFontError as error:
         emitted = _emit_errors((error.diagnostic,), json_output=json_output)
-        if not emitted:
+        if not emitted or _contains_internal_error((error.diagnostic,)):
             return 1
         return 3 if error.diagnostic.code == "OUTPUT_OUT_OF_DATE" else 2
     except Exception as error:

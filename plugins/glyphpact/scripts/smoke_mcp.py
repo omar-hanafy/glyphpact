@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from _bundle import BundleError, plugin_root, verify_plugin_bundle
+from _bundle import EXPECTED_VERSION, BundleError, plugin_root, verify_plugin_bundle
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -194,7 +194,7 @@ async def _smoke(root: Path) -> dict[str, Any]:
         )
     if audit_result.isError or not isinstance(audit_result.structuredContent, dict):
         raise BundleError("MCP single-SVG audit did not return structured success.")
-    if initialization.serverInfo.version != "1.0.0":
+    if initialization.serverInfo.version != EXPECTED_VERSION:
         raise BundleError(
             "MCP server version differs from the bundled GlyphPact release: "
             f"{initialization.serverInfo.version!r}."

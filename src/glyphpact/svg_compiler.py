@@ -7,8 +7,10 @@ import re
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import Any, NoReturn, cast
+from xml.parsers import expat
 
 import webcolors
+from lxml import etree
 from picosvg import svg_pathops
 from picosvg.geometric_types import Rect
 from picosvg.svg import SVG, from_element
@@ -56,6 +58,13 @@ _FORBIDDEN_ELEMENTS = frozenset(
 _PAINT_SERVER_ELEMENTS = frozenset({"linearGradient", "pattern", "radialGradient", "stop"})
 
 _SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+_MAX_XML_NESTING = 128
+_XML_RESOURCE_ERROR_PREFIXES = (
+    "Buffer size limit exceeded",
+    "Excessive depth",
+    "Resource limit exceeded",
+    "Text node too long",
+)
 
 _SUPPORTED_ELEMENTS = frozenset(
     {
@@ -668,6 +677,37 @@ def _reject_unsafe_xml(source: SvgSource) -> None:
             "DOCTYPE and ENTITY declarations are forbidden.",
             source=source.source_id,
         )
+
+
+class _XmlNestingExceeded(RuntimeError):
+    pass
+
+
+def _exceeds_xml_nesting_limit(content: str) -> bool:
+    """Probe depth only after lxml rejects a document."""
+
+    depth = -1
+    parser = expat.ParserCreate(namespace_separator="}")
+
+    def start_element(_name: str, _attributes: dict[str, str]) -> None:
+        nonlocal depth
+        depth += 1
+        if depth > _MAX_XML_NESTING:
+            raise _XmlNestingExceeded
+
+    def end_element(_name: str) -> None:
+        nonlocal depth
+        depth -= 1
+
+    parser.StartElementHandler = start_element
+    parser.EndElementHandler = end_element
+    try:
+        parser.Parse(content, True)
+    except _XmlNestingExceeded:
+        return True
+    except (expat.ExpatError, ValueError):
+        return False
+    return False
 
 
 def _parse_style(style: str, source_id: str) -> dict[str, str]:
@@ -1329,10 +1369,10 @@ def _enforce_tree_limits(root: Any, source: SvgSource, config: BuildConfig) -> N
         parent = element.getparent()
         while parent is not None:
             depth += 1
-            if depth > 128:
+            if depth > _MAX_XML_NESTING:
                 raise IconFontError(
                     "SVG_TOO_DEEP",
-                    "The SVG exceeds the 128-element nesting limit.",
+                    f"The SVG exceeds the {_MAX_XML_NESTING}-element nesting limit.",
                     source=source.source_id,
                 )
             parent = parent.getparent()
@@ -1542,6 +1582,24 @@ def _hard_validate_view_box(value: str, source_id: str) -> None:
             "viewBox dimensions must be finite and nonnegative.",
             source=source_id,
         )
+
+
+def _normalize_view_boxes(root: Any) -> None:
+    """Canonicalize separators only after every authored viewBox is validated."""
+
+    for element in root.iter():
+        if not isinstance(element.tag, str) or strip_ns(element.tag) not in {
+            "marker",
+            "pattern",
+            "svg",
+            "symbol",
+        }:
+            continue
+        value = element.get("viewBox")
+        if value is None:
+            continue
+        parts = tuple(part for part in re.split(r"[\s,]+", value.strip()) if part)
+        element.set("viewBox", " ".join(parts))
 
 
 def _hard_validate_dash_syntax(value: str, source_id: str, *, allow_css_wide: bool = False) -> None:
@@ -5982,6 +6040,10 @@ def _numeric_root_length(value: str | None, fallback: float, name: str, source_i
             "SVG_ROOT_VIEWPORT_UNREPRESENTABLE",
             f"Root {name}={value!r} depends on the embedding viewport.",
             source=source_id,
+            hint=(
+                "Provide numeric or absolute root dimensions. Remove responsive dimensions "
+                "only if the viewBox itself is the intended icon canvas."
+            ),
         )
     result = _resolved_bounded_length(
         value,
@@ -6419,8 +6481,34 @@ def compile_svg(source: SvgSource, config: BuildConfig) -> CanonicalGlyph:
     _reject_unsafe_xml(source)
     context = _ConversionContext(config, source.source_id)
     try:
-        svg = SVG.fromstring(source.content)
+        try:
+            svg = SVG.fromstring(source.content)
+        except etree.XMLSyntaxError as error:
+            if _exceeds_xml_nesting_limit(source.content):
+                raise IconFontError(
+                    "SVG_TOO_DEEP",
+                    f"The SVG exceeds the {_MAX_XML_NESTING}-element nesting limit.",
+                    source=source.source_id,
+                ) from error
+            if error.code == etree.ErrorTypes.ERR_RESOURCE_LIMIT or error.msg.startswith(
+                _XML_RESOURCE_ERROR_PREFIXES
+            ):
+                raise IconFontError(
+                    "SVG_XML_RESOURCE_LIMIT",
+                    "The XML document exceeds a parser resource limit.",
+                    source=source.source_id,
+                    hint="Reduce oversized XML text nodes before compiling this icon.",
+                ) from error
+            line, column = error.position
+            raise IconFontError(
+                "SVG_XML_MALFORMED",
+                "The input is not a well-formed XML document.",
+                source=source.source_id,
+                hint="Provide well-formed XML whose root element is a namespaced <svg>.",
+                details={"line": line, "column": column},
+            ) from error
         _preflight(svg, source, config)
+        _normalize_view_boxes(svg.svg_root)
         svg.apply_style_attributes(inplace=True)
         _normalize_use_lengths(svg, source.source_id)
         _expand_symbol_uses(svg.svg_root, source.source_id)
@@ -6525,10 +6613,10 @@ def compile_svg(source: SvgSource, config: BuildConfig) -> CanonicalGlyph:
     except (IconFontError, SvgFeatureBatchError):
         raise
     except Exception as error:
-        message = str(error).strip() or type(error).__name__
         raise IconFontError(
-            "SVG_CONVERSION_FAILED",
-            message,
+            "INTERNAL_CONVERSION_ERROR",
+            "An unexpected internal error occurred while converting this SVG.",
             source=source.source_id,
-            hint="The SVG was rejected before any output was published.",
+            hint="Report this input and diagnostic if the failure is reproducible.",
+            details={"exceptionType": type(error).__name__},
         ) from error
