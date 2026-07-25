@@ -913,7 +913,7 @@ def load_config(path: Path) -> BuildConfig:
         value = raw.get(key, default)
         if isinstance(value, bool) or not isinstance(value, int):
             raise IconFontError("CONFIG_TYPE_INVALID", f"{key} must be an integer.")
-        return cast(int, value)
+        return value
 
     def number(key: str, default: float) -> float:
         value = raw.get(key, default)
