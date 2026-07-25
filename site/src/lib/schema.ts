@@ -24,6 +24,8 @@ export function softwareSchema(): Record<string, unknown> {
     description:
       'A deterministic command-line compiler that turns a directory of SVG files into a validated OpenType/CFF icon font, a committed codepoint registry, and a const Flutter IconData API, keeping existing codepoints stable across icon-pack changes.',
     url: absolute('/'),
+    image: absolute('/og/index.png'),
+    sameAs: [site.repo],
     softwareVersion: RELEASE.version,
     applicationCategory: 'DeveloperApplication',
     applicationSubCategory: 'Icon font compiler',
@@ -144,6 +146,7 @@ export function websiteSchema(): Record<string, unknown> {
     name: site.name,
     description: site.tagline,
     url: absolute('/'),
+    sameAs: [site.repo],
     inLanguage: 'en',
     about: softwareReference(),
     publisher: {

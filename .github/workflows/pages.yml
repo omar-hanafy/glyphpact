@@ -8,20 +8,10 @@ on:
       - "brand/**"
       - ".github/workflows/pages.yml"
   pull_request:
-    paths:
-      - "site/**"
-      - "brand/**"
-      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  # Never cancel a deployment already in flight; a half-published site is worse
-  # than a slightly stale one.
-  group: pages-${{ github.ref }}
-  cancel-in-progress: false
 
 defaults:
   run:
@@ -31,6 +21,15 @@ jobs:
   build:
     name: Build and verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    concurrency:
+      # A new commit supersedes an older build of the same pull request. Main
+      # builds serialize so an older build cannot reach production after a
+      # newer one.
+      group: site-build-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,6 +47,9 @@ jobs:
       - name: Install from the committed lockfile
         run: npm ci
 
+      - name: Install the pinned browser
+        run: npx playwright install --with-deps --only-shell chromium
+
       - name: Type-check content and components
         run: npm run check
 
@@ -63,22 +65,31 @@ jobs:
       - name: Check links, metadata, structured data, and sitemap
         run: npm run check:links
 
+      - name: Check responsive layout and accessibility
+        run: npm run test:browser
+
       - name: Configure Pages
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Upload Pages artifact
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site/dist
 
   deploy:
     name: Deploy to GitHub Pages
-    # Pull requests build and verify but never publish.
-    if: github.event_name != 'pull_request'
+    # Pull requests and manual dispatches from non-main branches build and
+    # verify, but never publish.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      # GitHub Pages has one production target. Serialize every deployment
+      # regardless of the triggering run or branch ref.
+      group: pages-production
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write

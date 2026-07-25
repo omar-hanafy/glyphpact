@@ -14,6 +14,8 @@ import sharp from 'sharp';
 
 const MARK = '../brand/glyphpact-mark.svg';
 const ICON = '../brand/glyphpact-icon.svg';
+const APPLE_TOUCH_ICON = 'public/apple-touch-icon.png';
+const APPLE_TOUCH_SOURCE = '../brand/apple-touch-icon.png';
 
 const failures = [];
 const notes = [];
@@ -78,6 +80,40 @@ if (icon) {
   }
 }
 
+/* ----------------------------------------------- platform icon contracts */
+
+async function checkAppleTouchIcon() {
+  for (const path of [APPLE_TOUCH_SOURCE, APPLE_TOUCH_ICON]) {
+    if (!existsSync(path)) {
+      failures.push(`Missing Apple touch icon: ${path}`);
+      return;
+    }
+
+    try {
+      const metadata = await sharp(readFileSync(path)).metadata();
+      if (metadata.format !== 'png' || metadata.width !== 180 || metadata.height !== 180) {
+        failures.push(
+          `${path} must be a 180x180 PNG (found ${metadata.width ?? '?'}x${metadata.height ?? '?'} ${metadata.format ?? 'unknown'}).`,
+        );
+      }
+    } catch (error) {
+      failures.push(`${path} could not be decoded as an image: ${error.message}`);
+    }
+  }
+
+  if (
+    existsSync(APPLE_TOUCH_SOURCE) &&
+    existsSync(APPLE_TOUCH_ICON) &&
+    !readFileSync(APPLE_TOUCH_SOURCE).equals(readFileSync(APPLE_TOUCH_ICON))
+  ) {
+    failures.push(
+      `${APPLE_TOUCH_ICON} must be byte-identical to the canonical ${APPLE_TOUCH_SOURCE} artwork.`,
+    );
+  } else if (existsSync(APPLE_TOUCH_SOURCE) && existsSync(APPLE_TOUCH_ICON)) {
+    notes.push('Apple touch icon is a byte-identical 180x180 PNG mirror.');
+  }
+}
+
 /* ------------------------------------------------- legibility at 16 pixels */
 
 /**
@@ -126,6 +162,7 @@ async function checkLegibility(path, label) {
 
 await checkLegibility(ICON, 'Standalone icon');
 await checkLegibility(MARK, 'Mark');
+await checkAppleTouchIcon();
 
 /* ----------------------------------------------------------------- report */
 

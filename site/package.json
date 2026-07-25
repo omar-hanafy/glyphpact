@@ -17,8 +17,10 @@
     "check:claims": "node scripts/check-claims.mjs",
     "check:links": "node scripts/check-links.mjs",
     "check:links:external": "node scripts/check-links.mjs --external",
+    "test:browser": "playwright test",
     "// verify": "check:claims and check:links read dist/, so they must follow the build",
-    "verify": "npm run check && npm run check:brand && npm run build && npm run check:claims && npm run check:links"
+    "verify:static": "npm run check && npm run check:brand && npm run build && npm run check:claims && npm run check:links",
+    "verify": "npm run verify:static && npm run test:browser"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -28,6 +30,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@axe-core/playwright": "4.12.1",
+    "@playwright/test": "1.62.0",
     "typescript": "^5.9.3"
   }
 }

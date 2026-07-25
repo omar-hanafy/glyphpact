@@ -6,3 +6,7 @@ dist/
 
 # Dependencies. package-lock.json is committed so installs are reproducible.
 node_modules/
+
+# Browser-test artifacts. CI retains traces only when a run fails.
+playwright-report/
+test-results/

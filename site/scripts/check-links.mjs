@@ -18,8 +18,10 @@ import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const DIST = 'dist';
-const BASE = '/glyphpact';
-const ORIGIN = 'https://omar-hanafy.github.io';
+const configuredBase = process.env.SITE_BASE ?? '/glyphpact';
+const BASE =
+  configuredBase === '/' ? '' : `/${configuredBase.replace(/^\/+|\/+$/g, '')}`;
+const ORIGIN = (process.env.SITE_ORIGIN ?? 'https://omar-hanafy.github.io').replace(/\/+$/, '');
 const checkExternal = process.argv.includes('--external');
 
 const failures = [];
@@ -86,6 +88,8 @@ for (const file of htmlFiles) {
     else if (prop.endsWith(':url') || prop.endsWith(':image')) {
       if (!value.startsWith('https://')) {
         failures.push(`${page}: ${prop} must be absolute, got "${value}".`);
+      } else if (prop.endsWith(':image') && !resolves(new URL(value).pathname)) {
+        failures.push(`${page}: ${prop} points at ${value}, which was not built.`);
       }
     }
   }
@@ -94,6 +98,19 @@ for (const file of htmlFiles) {
   if (!twitterImage) failures.push(`${page}: missing twitter:image.`);
   else if (!resolves(new URL(twitterImage).pathname)) {
     failures.push(`${page}: twitter:image points at ${twitterImage}, which was not built.`);
+  }
+
+  const appleTouchTag = html.match(/<link\b[^>]*rel="apple-touch-icon"[^>]*>/i)?.[0];
+  const appleTouchIcon = appleTouchTag?.match(/\shref="([^"]+)"/i)?.[1];
+  if (!appleTouchTag || !appleTouchIcon) {
+    failures.push(`${page}: missing apple-touch-icon.`);
+  } else {
+    if (!/\ssizes="180x180"/i.test(appleTouchTag)) {
+      failures.push(`${page}: apple-touch-icon must declare sizes="180x180".`);
+    }
+    if (!resolves(appleTouchIcon)) {
+      failures.push(`${page}: apple-touch-icon points at ${appleTouchIcon}, which was not built.`);
+    }
   }
 
   /* --------------------------------------------------------------- headings */
@@ -134,16 +151,49 @@ for (const file of htmlFiles) {
 
   /* ------------------------------------------------------------ structured */
 
+  const structuredData = [];
   for (const block of html.matchAll(
     /<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi,
   )) {
     try {
       const parsed = JSON.parse(block[1]);
+      structuredData.push(parsed);
       if (!parsed['@context'] || !parsed['@type']) {
         failures.push(`${page}: a JSON-LD block is missing @context or @type.`);
       }
     } catch (error) {
       failures.push(`${page}: invalid JSON-LD (${error.message}).`);
+    }
+  }
+
+  if (file === `${DIST}/index.html`) {
+    const software = structuredData.find((block) => block['@type'] === 'SoftwareApplication');
+    const website = structuredData.find((block) => block['@type'] === 'WebSite');
+
+    if (!software) {
+      failures.push(`${page}: missing SoftwareApplication structured data.`);
+    } else {
+      if (
+        typeof software.image !== 'string' ||
+        !software.image.startsWith('https://') ||
+        !resolves(new URL(software.image).pathname)
+      ) {
+        failures.push(`${page}: SoftwareApplication image must resolve to a built absolute URL.`);
+      }
+      if (
+        !Array.isArray(software.sameAs) ||
+        !software.sameAs.some((value) => typeof value === 'string' && value.startsWith('https://'))
+      ) {
+        failures.push(`${page}: SoftwareApplication sameAs must name an HTTPS project identity.`);
+      }
+    }
+
+    if (
+      !website ||
+      !Array.isArray(website.sameAs) ||
+      !website.sameAs.some((value) => typeof value === 'string' && value.startsWith('https://'))
+    ) {
+      failures.push(`${page}: WebSite sameAs must name an HTTPS project identity.`);
     }
   }
 
@@ -164,7 +214,7 @@ for (const file of htmlFiles) {
     }
 
     // The load-bearing check: a root-relative link that skips the base path.
-    if (!href.startsWith(`${BASE}/`) && href !== BASE) {
+    if (BASE && !href.startsWith(`${BASE}/`) && href !== BASE) {
       failures.push(
         `${page}: link "${href}" is missing the ${BASE} base path. ` +
           'It will 404 in production. Build internal URLs with path() from src/site.config.ts.',

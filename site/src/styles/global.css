@@ -451,6 +451,7 @@ main {
   gap: 1.25rem;
   min-height: 4rem;
   flex-wrap: wrap;
+  position: relative;
 }
 
 .gp-brand {
@@ -504,6 +505,115 @@ main {
 .gp-nav__repo svg {
   inline-size: 1rem;
   block-size: 1rem;
+}
+
+.gp-mobile-nav {
+  display: none;
+  position: relative;
+  margin-inline-start: auto;
+}
+
+.gp-mobile-nav summary {
+  min-width: 4.5rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--gp-radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  font-size: 0.85rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.gp-mobile-nav summary::-webkit-details-marker {
+  display: none;
+}
+
+.gp-mobile-nav summary:hover,
+.gp-mobile-nav[open] summary {
+  color: var(--text);
+  border-color: var(--rule-strong);
+  background: var(--bg-raised);
+}
+
+.gp-mobile-nav__icon {
+  inline-size: 0.9rem;
+  block-size: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.gp-mobile-nav__icon span {
+  inline-size: 100%;
+  block-size: 1px;
+  background: currentcolor;
+  transform-origin: center;
+  transition: transform 160ms ease;
+}
+
+.gp-mobile-nav[open] .gp-mobile-nav__icon span:first-child {
+  transform: translateY(0.3rem) rotate(45deg);
+}
+
+.gp-mobile-nav[open] .gp-mobile-nav__icon span:last-child {
+  transform: translateY(-0.3rem) rotate(-45deg);
+}
+
+.gp-mobile-nav__panel {
+  position: absolute;
+  inset-block-start: calc(100% + 0.6rem);
+  inset-inline-end: 0;
+  z-index: 60;
+  width: min(19rem, calc(100vw - var(--gp-gutter) - var(--gp-gutter)));
+  padding: 0.45rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--gp-radius-lg);
+  background: color-mix(in srgb, var(--bg-raised) 96%, transparent);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 28%);
+  backdrop-filter: blur(14px);
+}
+
+.gp-mobile-nav__panel a {
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--gp-radius);
+  display: flex;
+  align-items: center;
+}
+
+.gp-mobile-nav__panel a:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.gp-mobile-nav__panel a[aria-current='page'] {
+  color: var(--text);
+  box-shadow: inset 2px 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+@media (max-width: 52rem) {
+  .gp-header__inner {
+    min-height: 3.75rem;
+    flex-wrap: nowrap;
+  }
+
+  .gp-nav--desktop {
+    display: none;
+  }
+
+  .gp-mobile-nav {
+    display: block;
+  }
 }
 
 /* ---------------------------------------------------------------- footer */
@@ -594,12 +704,21 @@ main {
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
 }
 
 .gp-btn:hover {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
+  transform: translateY(-1px);
+}
+
+.gp-btn:active {
+  transform: translateY(0);
 }
 
 .gp-btn--primary {
@@ -748,6 +867,10 @@ main {
 
 .gp-copy[data-state='done'] {
   color: var(--ok);
+}
+
+.gp-copy[data-state='error'] {
+  color: var(--fail);
 }
 
 /* ------------------------------------------------------------------ cards */
@@ -1222,11 +1345,54 @@ td small {
 /* -------------------------------------------------------------- hero */
 
 .gp-hero {
-  padding-block: clamp(3.5rem, 9vw, 7rem) var(--gp-section-gap);
+  padding-block: clamp(2.75rem, 9vw, 7rem) var(--gp-section-gap);
   display: grid;
   gap: clamp(2.5rem, 6vw, 4rem);
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
+}
+
+@media (max-width: 61.99rem) {
+  .gp-hero {
+    row-gap: 1.35rem;
+  }
+
+  /* Let the hero's text items participate in the outer grid on narrow screens.
+     This gives the glyph specimen a deliberate place in the first viewport
+     without duplicating content or changing reading order. */
+  .gp-hero > .gp-hero__body {
+    display: contents;
+  }
+
+  .gp-hero__body > .gp-annotation {
+    order: 1;
+  }
+
+  .gp-hero__body > h1 {
+    order: 2;
+  }
+
+  .gp-hero__body > .gp-lede {
+    order: 3;
+  }
+
+  .gp-hero__body > .gp-install-group {
+    order: 4;
+  }
+
+  .gp-hero__body > .gp-actions {
+    order: 5;
+  }
+
+  .gp-hero__figure {
+    order: 6;
+    margin-block: 0.5rem;
+    padding-inline: clamp(0.5rem, 5vw, 2rem);
+  }
+
+  .gp-hero__body > .gp-pills {
+    order: 7;
+  }
 }
 
 @media (min-width: 62rem) {
@@ -1249,6 +1415,102 @@ td small {
 .gp-hero__figure {
   display: flex;
   justify-content: center;
+}
+
+@media (max-width: 40rem) {
+  .gp-hero {
+    padding-block-start: 2.5rem;
+  }
+
+  .gp-hero .gp-actions {
+    width: 100%;
+  }
+
+  .gp-hero .gp-actions .gp-btn--primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* GitHub remains one tap away in the mobile menu. Keeping one hero action
+     gives the specimen room to enter the first viewport. */
+  .gp-hero .gp-actions .gp-btn:not(.gp-btn--primary) {
+    display: none;
+  }
+}
+
+@keyframes gp-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.55rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gp-figure-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.8rem) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gp-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.3rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gp-hero__body > .gp-annotation,
+  .gp-hero__body > h1,
+  .gp-hero__body > .gp-lede,
+  .gp-hero__body > .gp-install-group,
+  .gp-hero__body > .gp-actions,
+  .gp-hero__body > .gp-pills {
+    animation: gp-hero-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .gp-hero__body > h1 {
+    animation-delay: 45ms;
+  }
+
+  .gp-hero__body > .gp-lede {
+    animation-delay: 90ms;
+  }
+
+  .gp-hero__body > .gp-install-group {
+    animation-delay: 135ms;
+  }
+
+  .gp-hero__body > .gp-actions {
+    animation-delay: 180ms;
+  }
+
+  .gp-hero__body > .gp-pills {
+    animation-delay: 225ms;
+  }
+
+  .gp-hero__figure {
+    animation: gp-figure-enter 680ms 120ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .gp-mobile-nav[open] .gp-mobile-nav__panel {
+    animation: gp-menu-enter 160ms ease-out both;
+  }
 }
 
 /* ------------------------------------------------------------- pill row */

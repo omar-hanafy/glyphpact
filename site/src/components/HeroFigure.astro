@@ -201,4 +201,21 @@ const ticks = [0, 30, 60, 90, 120, 150, 180, 210, 240];
   .fig-locked-node {
     fill: var(--accent);
   }
+
+  @keyframes gp-figure-drift {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-0.3rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .gp-figure {
+      animation: gp-figure-drift 9s 900ms ease-in-out infinite;
+    }
+  }
 </style>
