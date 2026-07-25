@@ -76,3 +76,29 @@ test('machine-readable release facts match v1.0.1', async ({ page }) => {
     .evaluateAll((nodes) => nodes.map((node) => JSON.parse(node.textContent ?? '{}')));
   expect(JSON.stringify(schemas)).toContain('"softwareVersion":"1.0.1"');
 });
+
+test('four-card homepage grids form balanced rows', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/glyphpact/');
+
+  for (const selector of [
+    'section[aria-labelledby="agents-heading"] .gp-cell',
+    '.gp-next a',
+  ]) {
+    const cards = page.locator(selector);
+    await expect(cards).toHaveCount(4);
+    const boxes = await cards.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const box = node.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width };
+      }),
+    );
+
+    expect(boxes[0].y).toBe(boxes[1].y);
+    expect(boxes[2].y).toBe(boxes[3].y);
+    expect(boxes[2].y).toBeGreaterThan(boxes[0].y);
+    expect(boxes[0].x).toBe(boxes[2].x);
+    expect(boxes[1].x).toBe(boxes[3].x);
+    expect(boxes[0].width).toBe(boxes[3].width);
+  }
+});

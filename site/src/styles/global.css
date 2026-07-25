@@ -889,7 +889,7 @@ main {
 }
 
 .gp-grid--2 {
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .gp-cell {
@@ -1558,6 +1558,10 @@ figcaption {
   overflow: hidden;
 }
 
+.gp-next--balanced {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .gp-next a {
   background: var(--bg);
   padding: 1.4rem 1.5rem;
@@ -1588,6 +1592,13 @@ figcaption {
   inline-size: 0.85rem;
   block-size: 0.85rem;
   color: var(--accent);
+}
+
+@media (max-width: 40rem) {
+  .gp-grid--2,
+  .gp-next--balanced {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ------------------------------------------------------------ breadcrumbs */

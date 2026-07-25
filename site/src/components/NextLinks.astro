@@ -43,7 +43,7 @@ const items = [
         </div>
       )
     }
-    <div class="gp-next">
+    <div class:list={['gp-next', items.length === 4 && 'gp-next--balanced']}>
       {
         items.map((item) => (
           <a href={item.href}>
