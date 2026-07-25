@@ -6445,12 +6445,8 @@ def compile_svg(source: SvgSource, config: BuildConfig) -> CanonicalGlyph:
         try:
             svg = SVG.fromstring(source.content)
         except etree.XMLSyntaxError as error:
-            parser_error = error.error_log.last_error
-            if (
-                parser_error is not None
-                and parser_error.type == etree.ErrorTypes.ERR_RESOURCE_LIMIT
-            ):
-                if parser_error.message.startswith("Excessive depth"):
+            if error.code == etree.ErrorTypes.ERR_RESOURCE_LIMIT:
+                if error.msg.startswith("Excessive depth"):
                     raise IconFontError(
                         "SVG_TOO_DEEP",
                         "The SVG exceeds the 128-element nesting limit.",
