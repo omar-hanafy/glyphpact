@@ -27,6 +27,13 @@ const cards: Record<string, OgCard> = {
       'An OpenType font plus a tree-shakeable const IconData class, with a check mode that fails CI when committed output drifts from its sources.',
     footnote: 'glyphpact assets/icons -o lib/generated/app_icons -n AppIcons',
   },
+  mcp: {
+    eyebrow: 'Model Context Protocol',
+    title: 'Give your coding agent the compiler',
+    subtitle:
+      'A local stdio MCP server for auditing SVG packs, building and checking deterministic Flutter icon fonts, and paging validated reports.',
+    footnote: 'glyphpact@glyphpact',
+  },
   vsIcomoon: {
     eyebrow: 'Comparison',
     title: 'GlyphPact and IcoMoon do different jobs',

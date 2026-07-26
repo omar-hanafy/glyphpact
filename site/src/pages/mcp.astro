@@ -1,0 +1,256 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+import Faq from '../components/Faq.astro';
+import NextLinks from '../components/NextLinks.astro';
+import SignalDiagram from '../components/SignalDiagram.astro';
+import { site, routes, RELEASE } from '../site.config';
+import { mcpResources, mcpTools } from '../data/product';
+import { articleSchema, breadcrumbSchema, faqSchema } from '../lib/schema';
+
+const r = routes.mcp;
+const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'MCP' }];
+const jsonLd = [articleSchema('mcp'), breadcrumbSchema(crumbs), faqSchema('mcp')];
+
+const claudePlugin = `claude plugin marketplace add omar-hanafy/glyphpact
+claude plugin install glyphpact@glyphpact`;
+
+const codexPlugin = `codex plugin marketplace add omar-hanafy/glyphpact
+codex plugin add glyphpact@glyphpact`;
+
+const resourceList = mcpResources.join('\n');
+
+const toolBoundaries: Record<string, { label: string; className: string }> = {
+  audit_icon_pack: { label: 'read only', className: 'gp-state-locked' },
+  build_icon_font: { label: 'publishes', className: 'gp-state-lossy' },
+  check_icon_font: { label: 'coordination only', className: 'gp-state-ok' },
+  read_icon_report: { label: 'read only', className: 'gp-state-locked' },
+};
+
+const agentFlow = [
+  {
+    label: 'Agent workflow',
+    tone: 'locked' as const,
+    nodes: ['audit', 'page + release', 'decide policy', 'build + check'],
+    meta: 'Inspect first. Ask before approximation. Verify every published build.',
+  },
+];
+---
+
+<Base title={r.title} description={r.description} canonical={r.href} ogSlug="mcp" jsonLd={jsonLd}>
+  <Breadcrumbs crumbs={crumbs} />
+
+  <article class="gp-secondary">
+    <header class="gp-shell gp-secondary-hero">
+      <div class="gp-secondary-hero__body">
+        <p class="gp-annotation">Model Context Protocol</p>
+        <h1>Give your coding agent the compiler, not a shell transcript</h1>
+        <p class="gp-lede">
+          The optional GlyphPact plugin starts a local stdio MCP server for Claude
+          Code and Codex. It gives an agent bounded tools for auditing SVG packs,
+          publishing deterministic fonts, checking committed output, and paging
+          validated reports.
+        </p>
+        <div class="gp-pills-wrap">
+          <ul class="gp-pills">
+            <li>Claude Code</li>
+            <li>Codex</li>
+            <li>Local stdio</li>
+          </ul>
+        </div>
+      </div>
+
+      <SignalDiagram
+        caption="Recommended sequence"
+        title="Audit before build"
+        lanes={agentFlow}
+      />
+    </header>
+
+    <section class="gp-section" aria-labelledby="install">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Install</p>
+          <h2 id="install">Install the plugin and let the host start MCP</h2>
+          <p class="gp-lede">
+            The plugin bundles the exact GlyphPact {RELEASE.version} release wheel
+            used by the server. You do not need a source checkout or a global
+            GlyphPact installation.
+          </p>
+        </div>
+
+        <div class="gp-mcp-install">
+          <CodeBlock title="Claude Code" copy={claudePlugin}>{claudePlugin}</CodeBlock>
+          <CodeBlock title="Codex" copy={codexPlugin}>{codexPlugin}</CodeBlock>
+        </div>
+
+        <p class="gp-note">
+          <strong>Start a new session after installation.</strong> Do not add a
+          duplicate personal MCP configuration. The installed plugin starts the
+          bundled server automatically.
+        </p>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="tools">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Tool surface</p>
+          <h2 id="tools">Four tools, each with a clear boundary</h2>
+          <p class="gp-lede">
+            Every tool returns typed machine-readable data. Large result sets are
+            paged so an agent can inspect the whole pack without flooding its
+            context.
+          </p>
+        </div>
+
+        <div class="gp-grid gp-grid--2">
+          {
+            mcpTools.map((tool) => {
+              const boundary = toolBoundaries[tool.name];
+              return (
+                <div class="gp-cell">
+                  <h3>
+                    <span class:list={['gp-cell__tag', boundary.className]}>
+                      {boundary.label}
+                    </span>
+                    <code>{tool.name}</code>
+                  </h3>
+                  <p>{tool.text}</p>
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="workflow">
+      <div class="gp-shell gp-prose">
+        <h2 id="workflow">The safe agent workflow</h2>
+        <ol class="gp-steps">
+          <li>
+            <div>
+              <h3>Audit with strict defaults</h3>
+              <p>
+                Point <code>audit_icon_pack</code> at one absolute SVG path, an
+                absolute directory, or a checked-in config. The audit compiles
+                into disposable storage and removes its temporary artifacts.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Page findings, then release the snapshot</h3>
+              <p>
+                When an audit returns findings, reuse its snapshot ID and next
+                offset instead of recompiling. Release the snapshot explicitly
+                when review is complete.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Ask before changing fidelity policy</h3>
+              <p>
+                Lossy conversion and omission both default to error. An agent
+                should request an explicit decision before allowing either one,
+                and preserve every reported classification.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Publish, then prove the output is current</h3>
+              <p>
+                Run <code>build_icon_font</code> only after the policy is settled,
+                then run <code>check_icon_font</code>. Use
+                {' '}<code>read_icon_report</code> to inspect large reports by page.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="resources">
+      <div class="gp-shell gp-feature-split">
+        <div class="gp-head">
+          <p class="gp-annotation">Typed resources</p>
+          <h2 id="resources">The contract is available to the agent</h2>
+          <p class="gp-lede">
+            The server exposes the config, report, and CLI-result JSON Schemas as
+            MCP resources. An agent can validate the structures it reads instead
+            of inferring fields from examples.
+          </p>
+        </div>
+        <CodeBlock title="MCP resource URIs" copy={resourceList}>{resourceList}</CodeBlock>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="boundary">
+      <div class="gp-shell gp-prose">
+        <h2 id="boundary">Local by design, bounded by the config</h2>
+        <p>
+          GlyphPact runs locally. The tools receive filesystem paths selected by
+          the agent and do not upload SVGs. Audit snapshots live in a private,
+          bounded temporary cache and expire automatically if they are not
+          released first.
+        </p>
+        <p>
+          <code>build_icon_font</code> writes only to the output directory declared
+          by the supplied config. GlyphPact refuses to replace a non-empty
+          directory it does not own unless the caller explicitly opts into
+          adoption.
+        </p>
+        <p>
+          <code>check_icon_font</code> does not rewrite generated artifacts, but it
+          may create the output parent and leaves the persistent sibling
+          coordination lock. Its MCP annotation is non-destructive rather than
+          read-only for that reason.
+        </p>
+        <p class="gp-note">
+          <strong>Runtime requirements.</strong> Install Python 3.10 or newer and
+          {' '}<a href="https://docs.astral.sh/uv/">uv</a> on <code>PATH</code>. The
+          first MCP start needs network access to resolve the pinned MCP runtime
+          and declared dependencies; later starts reuse uv's cache.
+        </p>
+      </div>
+    </section>
+
+    <Faq page="mcp" heading="MCP questions" />
+
+    <NextLinks
+      heading="Continue with GlyphPact"
+      keys={['flutter', 'codepoints']}
+      extra={[
+        {
+          href: site.links.pluginGuide,
+          title: 'Full plugin guide',
+          blurb:
+            'Runtime details, snapshot limits, mutation boundaries, and maintainer validation.',
+          external: true,
+        },
+      ]}
+    />
+  </article>
+</Base>
+
+<style>
+  .gp-mcp-install {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .gp-mcp-install + .gp-note {
+    margin-block-start: 1.5rem;
+  }
+
+  @media (max-width: 42rem) {
+    .gp-mcp-install {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

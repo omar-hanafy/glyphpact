@@ -103,7 +103,13 @@ export function absolute(p = '/'): string {
 
 /* ---------------------------------------------------------------- routes */
 
-export type RouteKey = 'home' | 'flutter' | 'codepoints' | 'vsIcomoon' | 'vsFlutterIcon';
+export type RouteKey =
+  | 'home'
+  | 'flutter'
+  | 'mcp'
+  | 'codepoints'
+  | 'vsIcomoon'
+  | 'vsFlutterIcon';
 
 /**
  * Every indexable route, in one place. Drives navigation, breadcrumbs,
@@ -148,6 +154,15 @@ export const routes: Record<RouteKey, {
     description:
       'Compile SVG files into an OpenType font and a tree-shakeable const Flutter IconData class. Covers pubspec registration, font packages, layered icons, semantics, and CI staleness checks.',
     short: 'Flutter integration',
+    inNav: true,
+  },
+  mcp: {
+    href: '/mcp/',
+    nav: 'MCP',
+    title: 'GlyphPact MCP server for Claude Code and Codex',
+    description:
+      'Install GlyphPact’s local stdio MCP server for Claude Code and Codex. Audit SVG icon packs, build and check deterministic Flutter icon fonts, and page validated reports without uploading artwork.',
+    short: 'MCP integration',
     inNav: true,
   },
   vsIcomoon: {
