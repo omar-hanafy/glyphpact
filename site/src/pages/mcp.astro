@@ -3,170 +3,245 @@ import Base from '../layouts/Base.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 import Faq from '../components/Faq.astro';
+import McpArchitecture from '../components/McpArchitecture.astro';
+import McpClientSetup from '../components/McpClientSetup.astro';
 import NextLinks from '../components/NextLinks.astro';
-import SignalDiagram from '../components/SignalDiagram.astro';
 import { site, routes, RELEASE } from '../site.config';
-import { mcpResources, mcpTools } from '../data/product';
+import {
+  mcpClients,
+  mcpPrompts,
+  mcpResourceDocs,
+  mcpToolDocs,
+  pluginInstall,
+} from '../data/mcp';
 import { articleSchema, breadcrumbSchema, faqSchema } from '../lib/schema';
 
 const r = routes.mcp;
 const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'MCP' }];
 const jsonLd = [articleSchema('mcp'), breadcrumbSchema(crumbs), faqSchema('mcp')];
 
-const claudePlugin = `claude plugin marketplace add omar-hanafy/glyphpact
-claude plugin install glyphpact@glyphpact`;
+const expectedTools = mcpToolDocs.map((tool) => tool.name).join('\n');
+const expectedResources = mcpResourceDocs.map((resource) => resource.uri).join('\n');
 
-const codexPlugin = `codex plugin marketplace add omar-hanafy/glyphpact
-codex plugin add glyphpact@glyphpact`;
-
-const resourceList = mcpResources.join('\n');
-
-const toolBoundaries: Record<string, { label: string; className: string }> = {
-  audit_icon_pack: { label: 'read only', className: 'gp-state-locked' },
-  build_icon_font: { label: 'publishes', className: 'gp-state-lossy' },
-  check_icon_font: { label: 'coordination only', className: 'gp-state-ok' },
-  read_icon_report: { label: 'read only', className: 'gp-state-locked' },
-};
-
-const agentFlow = [
-  {
-    label: 'Agent workflow',
-    tone: 'locked' as const,
-    nodes: ['audit', 'page + release', 'decide policy', 'build + check'],
-    meta: 'Inspect first. Ask before approximation. Verify every published build.',
-  },
+const contents = [
+  { href: '#install', label: 'Install' },
+  { href: '#manual', label: 'Manual setup' },
+  { href: '#verify', label: 'Verify' },
+  { href: '#use', label: 'Use it' },
+  { href: '#tools', label: 'Tools' },
+  { href: '#workflow', label: 'Workflow' },
+  { href: '#resources', label: 'Resources' },
+  { href: '#safety', label: 'Safety' },
+  { href: '#troubleshooting', label: 'Troubleshooting' },
 ];
 ---
 
 <Base title={r.title} description={r.description} canonical={r.href} ogSlug="mcp" jsonLd={jsonLd}>
   <Breadcrumbs crumbs={crumbs} />
 
-  <article class="gp-secondary">
+  <article class="gp-secondary gp-mcp-docs">
     <header class="gp-shell gp-secondary-hero">
       <div class="gp-secondary-hero__body">
-        <p class="gp-annotation">Model Context Protocol</p>
-        <h1>Give your coding agent the compiler, not a shell transcript</h1>
+        <p class="gp-annotation">GlyphPact MCP server</p>
+        <h1>Run GlyphPact from the agent you already use</h1>
         <p class="gp-lede">
-          The optional GlyphPact plugin starts a local stdio MCP server for Claude
-          Code and Codex. It gives an agent bounded tools for auditing SVG packs,
-          publishing deterministic fonts, checking committed output, and paging
-          validated reports.
+          Install the full plugin in Claude Code or Codex, or add the same local
+          stdio server to Antigravity, Cursor, JetBrains, VS Code, Zed,
+          Windsurf, Gemini CLI, and other MCP clients.
         </p>
-        <div class="gp-pills-wrap">
-          <ul class="gp-pills">
-            <li>Claude Code</li>
-            <li>Codex</li>
-            <li>Local stdio</li>
-          </ul>
+        <div class="gp-actions">
+          <a class="gp-btn gp-btn--primary" href="#install">Choose an install</a>
+          <a class="gp-btn" href="#tools">See the four tools</a>
         </div>
+        <ul class="gp-pills" aria-label="MCP server facts">
+          <li>Plugin or manual</li>
+          <li>Local stdio</li>
+          <li>No API key</li>
+        </ul>
       </div>
 
-      <SignalDiagram
-        caption="Recommended sequence"
-        title="Audit before build"
-        lanes={agentFlow}
-      />
+      <McpArchitecture />
     </header>
 
-    <section class="gp-section" aria-labelledby="install">
+    <nav class="gp-mcp-toc" aria-label="On this page">
+      <div class="gp-shell">
+        <span>On this page</span>
+        <div>
+          {contents.map((item) => <a href={item.href}>{item.label}</a>)}
+        </div>
+      </div>
+    </nav>
+
+    <section class="gp-section" id="install" aria-labelledby="install-heading">
       <div class="gp-shell">
         <div class="gp-head">
           <p class="gp-annotation">Install</p>
-          <h2 id="install">Install the plugin and let the host start MCP</h2>
+          <h2 id="install-heading">Choose the part you want</h2>
           <p class="gp-lede">
-            The plugin bundles the exact GlyphPact {RELEASE.version} release wheel
-            used by the server. You do not need a source checkout or a global
-            GlyphPact installation.
+            Claude Code and Codex can install the complete plugin. Every client
+            with local stdio MCP support can install the server by itself.
           </p>
         </div>
 
-        <div class="gp-mcp-install">
-          <CodeBlock title="Claude Code" copy={claudePlugin}>{claudePlugin}</CodeBlock>
-          <CodeBlock title="Codex" copy={codexPlugin}>{codexPlugin}</CodeBlock>
+        <div class="gp-mcp-modes">
+          <section aria-labelledby="plugin-mode-heading">
+            <span class="gp-mcp-modes__index">01</span>
+            <div>
+              <p class="gp-annotation">Claude Code + Codex</p>
+              <h3 id="plugin-mode-heading">Full plugin</h3>
+              <p>
+                Includes the four MCP tools, the three schema resources, and the
+                <code>sync-flutter-svg-icons</code> skill. The installed plugin
+                starts the bundled server.
+              </p>
+              <ul>
+                <li>No personal MCP entry</li>
+                <li>Plugin-managed release updates</li>
+                <li>Flutter wiring and rendered-verification guidance</li>
+              </ul>
+            </div>
+          </section>
+
+          <section aria-labelledby="manual-mode-heading">
+            <span class="gp-mcp-modes__index">02</span>
+            <div>
+              <p class="gp-annotation">Any local stdio host</p>
+              <h3 id="manual-mode-heading">MCP server only</h3>
+              <p>
+                Adds the same four tools and three resources through the
+                published <code>glyphpact[mcp]</code> package. It does not add the
+                plugin skill.
+              </p>
+              <ul>
+                <li>One client config entry</li>
+                <li>No source checkout or global GlyphPact install</li>
+                <li>Version pinned until you update the entry</li>
+              </ul>
+            </div>
+          </section>
+        </div>
+
+        <div class="gp-mcp-plugin">
+          <div class="gp-mcp-plugin__copy">
+            <p class="gp-annotation">Recommended where available</p>
+            <h3>Install the full plugin</h3>
+            <p>
+              Add the GlyphPact repository as a marketplace once, then install
+              the plugin. It bundles the exact {RELEASE.version} release wheel.
+            </p>
+          </div>
+          <div class="gp-mcp-plugin__commands">
+            <CodeBlock title="Claude Code" copy={pluginInstall.claude}>
+              {pluginInstall.claude}
+            </CodeBlock>
+            <CodeBlock title="Codex" copy={pluginInstall.codex}>
+              {pluginInstall.codex}
+            </CodeBlock>
+          </div>
         </div>
 
         <p class="gp-note">
-          <strong>Start a new session after installation.</strong> Do not add a
-          duplicate personal MCP configuration. The installed plugin starts the
-          bundled server automatically.
+          <strong>Start a new session after plugin installation.</strong> Claude
+          Code can also run <code>/reload-plugins</code>. Do not add a second
+          manual GlyphPact MCP entry while the plugin is enabled.
         </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="tools">
+    <section class="gp-section" id="manual" aria-labelledby="manual-heading">
       <div class="gp-shell">
         <div class="gp-head">
-          <p class="gp-annotation">Tool surface</p>
-          <h2 id="tools">Four tools, each with a clear boundary</h2>
+          <p class="gp-annotation">Manual MCP setup</p>
+          <h2 id="manual-heading">Pick your client and paste its native config</h2>
           <p class="gp-lede">
-            Every tool returns typed machine-readable data. Large result sets are
-            paged so an agent can inspect the whole pack without flooding its
-            context.
+            Every snippet launches the same pinned PyPI package. The outer JSON
+            or TOML changes because MCP clients do not share one configuration
+            file format.
           </p>
         </div>
 
-        <div class="gp-grid gp-grid--2">
-          {
-            mcpTools.map((tool) => {
-              const boundary = toolBoundaries[tool.name];
-              return (
-                <div class="gp-cell">
-                  <h3>
-                    <span class:list={['gp-cell__tag', boundary.className]}>
-                      {boundary.label}
-                    </span>
-                    <code>{tool.name}</code>
-                  </h3>
-                  <p>{tool.text}</p>
-                </div>
-              );
-            })
-          }
-        </div>
+        <dl class="gp-mcp-requirements">
+          <div>
+            <dt>Runtime</dt>
+            <dd>
+              <a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a>
+              on <code>PATH</code>; GlyphPact requires Python 3.10 or newer.
+            </dd>
+          </div>
+          <div>
+            <dt>First start</dt>
+            <dd>Network access while uv downloads the pinned package and MCP dependencies.</dd>
+          </div>
+          <div>
+            <dt>Later starts</dt>
+            <dd>uv reuses its local cache. SVG compilation itself stays local.</dd>
+          </div>
+        </dl>
+
+        <p class="gp-note gp-mcp-merge-note">
+          <strong>Merge, do not overwrite.</strong> If your config already has
+          MCP servers, add the <code>glyphpact</code> entry beside them. The
+          blocks below show complete wrappers so each one is safe to copy.
+        </p>
+
+        <McpClientSetup clients={mcpClients} />
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="workflow">
-      <div class="gp-shell gp-prose">
-        <h2 id="workflow">The safe agent workflow</h2>
-        <ol class="gp-steps">
+    <section class="gp-section" id="verify" aria-labelledby="verify-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Connection check</p>
+          <h2 id="verify-heading">Confirm the server before asking it to build</h2>
+          <p class="gp-lede">
+            Reload the client, find a server named GlyphPact, then compare its
+            public surface with the lists below.
+          </p>
+        </div>
+
+        <div class="gp-mcp-contract">
+          <CodeBlock title="Expected tools" copy={expectedTools}>{expectedTools}</CodeBlock>
+          <CodeBlock title="Expected resources" copy={expectedResources}>
+            {expectedResources}
+          </CodeBlock>
+        </div>
+
+        <ol class="gp-steps gp-steps--compact gp-mcp-verify-steps">
           <li>
             <div>
-              <h3>Audit with strict defaults</h3>
+              <h3>Reload the client</h3>
               <p>
-                Point <code>audit_icon_pack</code> at one absolute SVG path, an
-                absolute directory, or a checked-in config. The audit compiles
-                into disposable storage and removes its temporary artifacts.
+                Use the client-specific reload step above. A GUI client may
+                need to restart after uv is installed so its process receives
+                the updated <code>PATH</code>.
               </p>
             </div>
           </li>
           <li>
             <div>
-              <h3>Page findings, then release the snapshot</h3>
+              <h3>Check the public surface</h3>
               <p>
-                When an audit returns findings, reuse its snapshot ID and next
-                offset instead of recompiling. Release the snapshot explicitly
-                when review is complete.
+                Confirm all four tool names. Resource browsers should also show
+                the three <code>glyphpact://</code> schema URIs.
               </p>
             </div>
           </li>
           <li>
             <div>
-              <h3>Ask before changing fidelity policy</h3>
+              <h3>Start with an audit</h3>
               <p>
-                Lossy conversion and omission both default to error. An agent
-                should request an explicit decision before allowing either one,
-                and preserve every reported classification.
+                Use an absolute SVG or config path. Keep both fidelity policies
+                at their strict defaults until you have reviewed every finding.
               </p>
             </div>
           </li>
           <li>
             <div>
-              <h3>Publish, then prove the output is current</h3>
+              <h3>Approve writes deliberately</h3>
               <p>
-                Run <code>build_icon_font</code> only after the policy is settled,
-                then run <code>check_icon_font</code>. Use
-                {' '}<code>read_icon_report</code> to inspect large reports by page.
+                <code>build_icon_font</code> publishes files.
+                <code>check_icon_font</code> does not rewrite generated output,
+                but it may create the output parent and sibling lock.
               </p>
             </div>
           </li>
@@ -174,47 +249,315 @@ const agentFlow = [
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="resources">
-      <div class="gp-shell gp-feature-split">
+    <section class="gp-section" id="use" aria-labelledby="use-heading">
+      <div class="gp-shell">
         <div class="gp-head">
-          <p class="gp-annotation">Typed resources</p>
-          <h2 id="resources">The contract is available to the agent</h2>
+          <p class="gp-annotation">Use it</p>
+          <h2 id="use-heading">Give the agent an absolute path and a stopping point</h2>
           <p class="gp-lede">
-            The server exposes the config, report, and CLI-result JSON Schemas as
-            MCP resources. An agent can validate the structures it reads instead
-            of inferring fields from examples.
+            These prompts keep the first action read only, require explicit
+            policy decisions, and tell the agent when to release temporary
+            audit state.
           </p>
         </div>
-        <CodeBlock title="MCP resource URIs" copy={resourceList}>{resourceList}</CodeBlock>
+
+        <div class="gp-mcp-prompts">
+          <article>
+            <div>
+              <span>01</span>
+              <h3>Inspect one file or a full pack</h3>
+              <p>No project output is published.</p>
+            </div>
+            <CodeBlock title="Prompt: strict audit" copy={mcpPrompts.audit}>
+              {mcpPrompts.audit}
+            </CodeBlock>
+          </article>
+          <article>
+            <div>
+              <span>02</span>
+              <h3>Audit, publish, then check</h3>
+              <p>The agent stops for policy approval before a build.</p>
+            </div>
+            <CodeBlock title="Prompt: configured build" copy={mcpPrompts.build}>
+              {mcpPrompts.build}
+            </CodeBlock>
+          </article>
+          <article>
+            <div>
+              <span>03</span>
+              <h3>Read an existing report</h3>
+              <p>Large report collections stay paged.</p>
+            </div>
+            <CodeBlock title="Prompt: report review" copy={mcpPrompts.inspect}>
+              {mcpPrompts.inspect}
+            </CodeBlock>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="boundary">
+    <section class="gp-section" id="tools" aria-labelledby="tools-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Tool reference</p>
+          <h2 id="tools-heading">Four tools with different write boundaries</h2>
+          <p class="gp-lede">
+            Each call returns bounded structured JSON. The inner build and
+            check result is validated against GlyphPact's CLI-result schema;
+            report reads are validated against the report schema.
+          </p>
+        </div>
+
+        <div class="gp-mcp-tools">
+          {
+            mcpToolDocs.map((tool) => (
+              <article class="gp-mcp-tool">
+                <header>
+                  <span class:list={['gp-cell__tag', tool.className]}>{tool.boundary}</span>
+                  <h3><code>{tool.name}</code></h3>
+                </header>
+                <div class="gp-mcp-tool__body">
+                  <p>{tool.purpose}</p>
+                  <dl>
+                    <div>
+                      <dt>Inputs</dt>
+                      <dd>{tool.inputs}</dd>
+                    </div>
+                    <div>
+                      <dt>Returns</dt>
+                      <dd>{tool.returns}</dd>
+                    </div>
+                  </dl>
+                  {tool.note && <p class="gp-note">{tool.note}</p>}
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" id="workflow" aria-labelledby="workflow-heading">
       <div class="gp-shell gp-prose">
-        <h2 id="boundary">Local by design, bounded by the config</h2>
-        <p>
-          GlyphPact runs locally. The tools receive filesystem paths selected by
-          the agent and do not upload SVGs. Audit snapshots live in a private,
-          bounded temporary cache and expire automatically if they are not
-          released first.
-        </p>
-        <p>
-          <code>build_icon_font</code> writes only to the output directory declared
-          by the supplied config. GlyphPact refuses to replace a non-empty
-          directory it does not own unless the caller explicitly opts into
-          adoption.
-        </p>
-        <p>
-          <code>check_icon_font</code> does not rewrite generated artifacts, but it
-          may create the output parent and leaves the persistent sibling
-          coordination lock. Its MCP annotation is non-destructive rather than
-          read-only for that reason.
-        </p>
-        <p class="gp-note">
-          <strong>Runtime requirements.</strong> Install Python 3.10 or newer and
-          {' '}<a href="https://docs.astral.sh/uv/">uv</a> on <code>PATH</code>. The
-          first MCP start needs network access to resolve the pinned MCP runtime
-          and declared dependencies; later starts reuse uv's cache.
+        <h2 id="workflow-heading">The workflow protects fidelity and codepoints</h2>
+        <ol class="gp-steps">
+          <li>
+            <div>
+              <h3>Audit with strict defaults</h3>
+              <p>
+                Provide one absolute SVG path, directory, or config path.
+                Approximation and omission both start as errors.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Page and release the audit snapshot</h3>
+              <p>
+                Follow <code>findings.nextOffset</code> with the returned snapshot
+                ID. Release that snapshot after every page has been reviewed.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Decide every fidelity exception</h3>
+              <p>
+                Ask before setting lossy conversion or unrepresentable skipping.
+                Keep the decision in the checked-in config.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Preserve the existing lock</h3>
+              <p>
+                The lock is the codepoint ABI. Do not recreate it to make a
+                migration or build pass.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Build, then run the staleness check</h3>
+              <p>
+                Publish only after policy is settled. A clean
+                <code>check_icon_font</code> proves the generated artifacts match
+                the current sources and config.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Read the report and verify Flutter</h3>
+              <p>
+                Page the published report. The full plugin then guides exact
+                font wiring, analysis, target build, launch, and rendered glyph
+                comparison.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="gp-section" id="resources" aria-labelledby="resources-heading">
+      <div class="gp-shell gp-mcp-resource-layout">
+        <div class="gp-head">
+          <p class="gp-annotation">MCP resources</p>
+          <h2 id="resources-heading">Three schemas describe the files inside the workflow</h2>
+          <p class="gp-lede">
+            These resources describe config files, published reports, and the
+            inner CLI result. They are not schemas for the outer MCP paging and
+            snapshot envelope.
+          </p>
+        </div>
+
+        <dl class="gp-mcp-resources">
+          {
+            mcpResourceDocs.map((resource) => (
+              <div>
+                <dt><code>{resource.uri}</code></dt>
+                <dd>{resource.description}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </section>
+
+    <section class="gp-section" id="safety" aria-labelledby="safety-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Filesystem and privacy</p>
+          <h2 id="safety-heading">Local transport, explicit paths, bounded temporary state</h2>
+          <p class="gp-lede">
+            The MCP process runs on the same machine as the client. It has no
+            API key, authentication flow, remote endpoint, or SVG upload path.
+          </p>
+        </div>
+
+        <dl class="gp-mcp-boundaries">
+          <div>
+            <dt>Transport</dt>
+            <dd>
+              Local stdio. The client starts <code>glyphpact-mcp</code> as a
+              child process and exchanges MCP messages through standard input
+              and output.
+            </dd>
+          </div>
+          <div>
+            <dt>Path handling</dt>
+            <dd>
+              Tool paths must be absolute and must already exist. The compiler
+              keeps its own canonical symlink, ownership, and unsafe-input
+              checks.
+            </dd>
+          </div>
+          <div>
+            <dt>Audit state</dt>
+            <dd>
+              Findings live in private local snapshots. One snapshot is capped
+              at 64 MiB; the store holds at most eight snapshots and 128 MiB
+              total. Idle snapshots expire after 15 minutes and all snapshots
+              expire within one hour.
+            </dd>
+          </div>
+          <div>
+            <dt>Published writes</dt>
+            <dd>
+              Build stages an atomic publication beside the configured output,
+              then replaces only an owned output directory. Build and check use
+              a persistent sibling <code>.glyphpact.lock</code> coordination
+              file.
+            </dd>
+          </div>
+          <div>
+            <dt>Report reads</dt>
+            <dd>
+              Reports must be stable regular files, are capped at 128 MiB, and
+              are checked against the report schema before paging.
+            </dd>
+          </div>
+          <div>
+            <dt>Context limits</dt>
+            <dd>
+              Findings pages allow up to 500 items and 1 MiB. One oversized
+              finding is replaced by a small identity summary instead of
+              flooding the client context.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section
+      class="gp-section"
+      id="troubleshooting"
+      aria-labelledby="troubleshooting-heading"
+    >
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Troubleshooting</p>
+          <h2 id="troubleshooting-heading">Fix the launcher before debugging the compiler</h2>
+        </div>
+
+        <dl class="gp-mcp-troubleshooting">
+          <div>
+            <dt>The client cannot find <code>uv</code></dt>
+            <dd>
+              Install uv, close the GUI client completely, and reopen it. GUI
+              apps often keep the <code>PATH</code> they received at launch. If
+              needed, replace <code>"command": "uv"</code> with uv's absolute
+              executable path.
+            </dd>
+          </div>
+          <div>
+            <dt>The first connection times out</dt>
+            <dd>
+              The first start downloads GlyphPact and its pinned MCP
+              dependencies. Confirm network access, retry once, then inspect the
+              client's MCP log. Later starts use uv's cache.
+            </dd>
+          </div>
+          <div>
+            <dt>GlyphPact appears twice</dt>
+            <dd>
+              The full plugin already registers the server. Remove or disable
+              the duplicate manual entry, or uninstall the plugin if you only
+              want MCP.
+            </dd>
+          </div>
+          <div>
+            <dt>A tool rejects a relative path</dt>
+            <dd>
+              Send an absolute existing path. The server may run outside the
+              project directory, so relative paths are rejected rather than
+              resolved against an uncertain working directory.
+            </dd>
+          </div>
+          <div>
+            <dt>An audit snapshot expired</dt>
+            <dd>
+              Run the audit once more, page the replacement snapshot, and
+              release it when finished. Do not reuse an unknown or expired
+              snapshot ID.
+            </dd>
+          </div>
+          <div>
+            <dt>A new GlyphPact release is available</dt>
+            <dd>
+              Marketplace users update the plugin. Manual users replace
+              <code>=={RELEASE.version}</code> in their config with the release
+              they intend to run, then restart or reload the server.
+            </dd>
+          </div>
+        </dl>
+
+        <p class="gp-mcp-help">
+          Still blocked? Include the client name, GlyphPact version, MCP log,
+          and the tool error in a
+          <a href={site.links.issues}>GitHub issue</a>.
         </p>
       </div>
     </section>
@@ -229,8 +572,14 @@ const agentFlow = [
           href: site.links.pluginGuide,
           title: 'Full plugin guide',
           blurb:
-            'Runtime details, snapshot limits, mutation boundaries, and maintainer validation.',
+            'Plugin payload, snapshot limits, mutation boundaries, and maintainer validation.',
           external: true,
+        },
+        {
+          href: '/',
+          title: 'GlyphPact overview',
+          blurb:
+            'Compiler outputs, fidelity policy, stable codepoints, and the project quick start.',
         },
       ]}
     />
@@ -238,19 +587,429 @@ const agentFlow = [
 </Base>
 
 <style>
-  .gp-mcp-install {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  :global(.gp-mcp-docs section[id]) {
+    scroll-margin-block-start: 8rem;
+  }
+
+  .gp-mcp-toc {
+    position: sticky;
+    inset-block-start: 4rem;
+    z-index: 40;
+    border-block: 1px solid var(--rule);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  .gp-mcp-toc .gp-shell {
+    min-width: 0;
+    display: flex;
+    align-items: center;
     gap: 1rem;
   }
 
-  .gp-mcp-install + .gp-note {
-    margin-block-start: 1.5rem;
+  .gp-mcp-toc span {
+    flex: none;
+    color: var(--text-faint);
+    font-family: var(--gp-font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
-  @media (max-width: 42rem) {
-    .gp-mcp-install {
+  .gp-mcp-toc div {
+    min-width: 0;
+    display: flex;
+    gap: 0.1rem 1.1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .gp-mcp-toc div::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gp-mcp-toc a {
+    flex: none;
+    padding-block: 0.7rem;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    text-decoration: none;
+    border-block-end: 1px solid transparent;
+  }
+
+  .gp-mcp-toc a:hover,
+  .gp-mcp-toc a:focus-visible {
+    color: var(--text);
+    border-block-end-color: var(--accent);
+  }
+
+  .gp-mcp-modes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-block: 1px solid var(--rule);
+  }
+
+  .gp-mcp-modes > section {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 1.2rem;
+    padding-block: 2rem;
+  }
+
+  .gp-mcp-modes > section + section {
+    padding-inline-start: clamp(1.5rem, 4vw, 3rem);
+    border-inline-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-modes > section:first-child {
+    padding-inline-end: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .gp-mcp-modes__index {
+    color: var(--accent);
+    font-family: var(--gp-font-mono);
+    font-size: 0.72rem;
+  }
+
+  .gp-mcp-modes section div {
+    min-width: 0;
+  }
+
+  .gp-mcp-modes h3 {
+    margin-block-start: 0.35rem;
+  }
+
+  .gp-mcp-modes p:not(.gp-annotation) {
+    margin-block-start: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .gp-mcp-modes ul {
+    margin-block-start: 1rem;
+    padding-inline-start: 1.1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .gp-mcp-modes li + li {
+    margin-block-start: 0.35rem;
+  }
+
+  .gp-mcp-plugin {
+    display: grid;
+    grid-template-columns: minmax(15rem, 0.65fr) minmax(0, 1.35fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    margin-block-start: clamp(3rem, 6vw, 5rem);
+    align-items: start;
+  }
+
+  .gp-mcp-plugin__copy h3 {
+    margin-block-start: 0.5rem;
+  }
+
+  .gp-mcp-plugin__copy p:not(.gp-annotation) {
+    margin-block-start: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .gp-mcp-plugin__commands {
+    min-width: 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .gp-mcp-plugin + .gp-note {
+    margin-block-start: 1.75rem;
+  }
+
+  .gp-mcp-requirements {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-block: 1px solid var(--rule);
+  }
+
+  .gp-mcp-requirements > div {
+    min-width: 0;
+    padding: 1.2rem;
+  }
+
+  .gp-mcp-requirements > div + div {
+    border-inline-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-requirements dt {
+    color: var(--accent);
+    font-family: var(--gp-font-mono);
+    font-size: 0.67rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .gp-mcp-requirements dd {
+    margin: 0.45rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .gp-mcp-merge-note {
+    margin-block: 2rem;
+  }
+
+  .gp-mcp-contract {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 1rem;
+    margin-block-end: 2.5rem;
+  }
+
+  .gp-mcp-verify-steps {
+    margin-block-start: 0;
+  }
+
+  .gp-mcp-prompts {
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-prompts article {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(13rem, 0.58fr) minmax(0, 1.42fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    padding-block: 2rem;
+    border-block-end: 1px solid var(--rule);
+    align-items: start;
+  }
+
+  .gp-mcp-prompts article > div {
+    min-width: 0;
+  }
+
+  .gp-mcp-prompts article > div > span {
+    color: var(--accent);
+    font-family: var(--gp-font-mono);
+    font-size: 0.7rem;
+  }
+
+  .gp-mcp-prompts h3 {
+    margin-block-start: 0.45rem;
+  }
+
+  .gp-mcp-prompts p {
+    margin-block-start: 0.55rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .gp-mcp-tools {
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-tool {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(13rem, 0.55fr) minmax(0, 1.45fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    padding-block: 2rem;
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .gp-mcp-tool header {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .gp-mcp-tool h3 {
+    min-width: 0;
+  }
+
+  .gp-mcp-tool h3 code {
+    overflow-wrap: anywhere;
+  }
+
+  .gp-mcp-tool__body {
+    min-width: 0;
+  }
+
+  .gp-mcp-tool__body > p:first-child {
+    color: var(--text);
+    font-size: 1.05rem;
+  }
+
+  .gp-mcp-tool dl {
+    margin-block-start: 1.35rem;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .gp-mcp-tool dl > div {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .gp-mcp-tool dt {
+    color: var(--text-faint);
+    font-family: var(--gp-font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .gp-mcp-tool dd {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  .gp-mcp-tool .gp-note {
+    margin-block-start: 1.35rem;
+  }
+
+  .gp-mcp-resource-layout {
+    display: grid;
+    grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
+    gap: clamp(2.5rem, 6vw, 5rem);
+    align-items: start;
+  }
+
+  .gp-mcp-resource-layout .gp-head {
+    margin: 0;
+  }
+
+  .gp-mcp-resources {
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-resources > div {
+    padding-block: 1.25rem;
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .gp-mcp-resources dt code {
+    color: var(--accent);
+  }
+
+  .gp-mcp-resources dd {
+    margin: 0.45rem 0 0;
+    color: var(--text-muted);
+  }
+
+  .gp-mcp-boundaries,
+  .gp-mcp-troubleshooting {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-boundaries > div,
+  .gp-mcp-troubleshooting > div {
+    min-width: 0;
+    padding: 1.45rem 0;
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .gp-mcp-boundaries > div:nth-child(odd),
+  .gp-mcp-troubleshooting > div:nth-child(odd) {
+    padding-inline-end: clamp(1.5rem, 5vw, 4rem);
+    border-inline-end: 1px solid var(--rule);
+  }
+
+  .gp-mcp-boundaries > div:nth-child(even),
+  .gp-mcp-troubleshooting > div:nth-child(even) {
+    padding-inline-start: clamp(1.5rem, 5vw, 4rem);
+  }
+
+  .gp-mcp-boundaries dt,
+  .gp-mcp-troubleshooting dt {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .gp-mcp-boundaries dd,
+  .gp-mcp-troubleshooting dd {
+    margin: 0.55rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  .gp-mcp-help {
+    margin-block-start: 2rem;
+    color: var(--text-muted);
+  }
+
+  .gp-mcp-help a {
+    color: var(--accent);
+  }
+
+  @media (max-width: 60rem) {
+    .gp-mcp-plugin,
+    .gp-mcp-resource-layout {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gp-mcp-plugin__copy,
+    .gp-mcp-resource-layout .gp-head {
+      max-width: 62ch;
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .gp-mcp-toc {
+      inset-block-start: 3.75rem;
+    }
+  }
+
+  @media (max-width: 46rem) {
+    .gp-mcp-modes,
+    .gp-mcp-requirements,
+    .gp-mcp-contract,
+    .gp-mcp-prompts article,
+    .gp-mcp-tool,
+    .gp-mcp-boundaries,
+    .gp-mcp-troubleshooting {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gp-mcp-modes > section + section {
+      padding-inline-start: 0;
+      border-inline-start: 0;
+      border-block-start: 1px solid var(--rule);
+    }
+
+    .gp-mcp-modes > section:first-child {
+      padding-inline-end: 0;
+    }
+
+    .gp-mcp-requirements > div + div {
+      border-inline-start: 0;
+      border-block-start: 1px solid var(--rule);
+    }
+
+    .gp-mcp-boundaries > div:nth-child(odd),
+    .gp-mcp-boundaries > div:nth-child(even),
+    .gp-mcp-troubleshooting > div:nth-child(odd),
+    .gp-mcp-troubleshooting > div:nth-child(even) {
+      padding-inline: 0;
+      border-inline-end: 0;
+    }
+  }
+
+  @media (max-width: 34rem) {
+    .gp-mcp-toc .gp-shell {
+      gap: 0.7rem;
+    }
+
+    .gp-mcp-toc span {
+      display: none;
+    }
+
+    .gp-mcp-tool dl > div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.35rem;
     }
   }
 </style>

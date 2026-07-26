@@ -98,9 +98,11 @@ authoring the CSS yourself.
   private use area ${capacity.bmpRange} provides ${capacity.bmpSlots} lifetime
   allocation slots; \`${capacity.supplementaryFlag}\` provides
   ${capacity.supplementarySlots}.
-- An optional Claude Code and Codex plugin exposes a local stdio MCP server with
-  the tools \`audit_icon_pack\`, \`build_icon_font\`, \`check_icon_font\`, and
-  \`read_icon_report\`.
+- A local stdio MCP server exposes \`audit_icon_pack\`,
+  \`build_icon_font\`, \`check_icon_font\`, and \`read_icon_report\`. Claude
+  Code and Codex can install the full plugin; Antigravity, Cursor, JetBrains,
+  VS Code, Zed, Windsurf, Gemini CLI, and other stdio clients can configure the
+  published MCP package manually.
 
 ## Generated output
 
@@ -150,7 +152,8 @@ fidelity policy - not privacy, and not breadth of output formats.
 - Config schema: ${site.links.configSchema}
 - Report schema: ${site.links.reportSchema}
 - Changelog: ${site.links.changelog}
-- Claude Code and Codex plugin: ${site.links.pluginGuide}
+- MCP installation and tool reference: ${absolute(routes.mcp.href)}
+- Claude Code and Codex plugin payload: ${site.links.pluginGuide}
 `;
 
   return new Response(body, {

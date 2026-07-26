@@ -1,0 +1,244 @@
+---
+import CodeBlock from './CodeBlock.astro';
+import type { McpClient } from '../data/mcp';
+
+interface Props {
+  clients: McpClient[];
+}
+
+const { clients } = Astro.props;
+---
+
+<div class="gp-mcp-clients" data-mcp-clients>
+  <nav class="gp-mcp-clients__jump" aria-label="Manual MCP clients">
+    {
+      clients.map((client) => (
+        <a href={`#client-${client.id}`}>{client.name}</a>
+      ))
+    }
+  </nav>
+
+  <div class="gp-mcp-clients__list">
+    {
+      clients.map((client, index) => (
+        <details
+          class="gp-mcp-client"
+          id={`client-${client.id}`}
+          name="mcp-client"
+          open={index === 0}
+        >
+          <summary>
+            <span class="gp-mcp-client__identity">
+              <strong>{client.name}</strong>
+              <span>{client.surface}</span>
+            </span>
+            <code>{client.location}</code>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M3.5 6 8 10.5 12.5 6" />
+            </svg>
+          </summary>
+
+          <div class="gp-mcp-client__body">
+            <div class="gp-mcp-client__steps">
+              <ol>
+                {client.instructions.map((instruction) => <li>{instruction}</li>)}
+              </ol>
+              <a href={client.docs}>{client.docsLabel}</a>
+            </div>
+
+            <CodeBlock
+              title={client.codeTitle}
+              copy={client.code}
+              label={`${client.name} GlyphPact MCP configuration`}
+            >
+              {client.code}
+            </CodeBlock>
+          </div>
+        </details>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  const openHashClient = () => {
+    const identifier = window.location.hash.slice(1);
+    if (!identifier.startsWith('client-')) return;
+    const target = document.getElementById(identifier);
+    if (target instanceof HTMLDetailsElement) target.open = true;
+  };
+
+  window.addEventListener('hashchange', openHashClient);
+  openHashClient();
+</script>
+
+<style>
+  .gp-mcp-clients {
+    min-width: 0;
+  }
+
+  .gp-mcp-clients__jump {
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding: 0 0 1rem;
+    scrollbar-width: thin;
+  }
+
+  .gp-mcp-clients__jump a {
+    flex: none;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-family: var(--gp-font-mono);
+    font-size: 0.7rem;
+    text-decoration: none;
+    transition:
+      color 120ms ease,
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .gp-mcp-clients__jump a:hover {
+    color: var(--text);
+    border-color: var(--rule-strong);
+    background: var(--bg-raised);
+  }
+
+  .gp-mcp-clients__list {
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-client {
+    scroll-margin-block-start: 8rem;
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .gp-mcp-client summary {
+    min-width: 0;
+    padding-block: 1.2rem;
+    cursor: pointer;
+    list-style: none;
+    display: grid;
+    grid-template-columns: minmax(10rem, 0.6fr) minmax(0, 1.1fr) auto;
+    gap: clamp(1rem, 3vw, 2rem);
+    align-items: center;
+    color: var(--text-muted);
+  }
+
+  .gp-mcp-client summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .gp-mcp-client summary:hover,
+  .gp-mcp-client[open] summary {
+    color: var(--text);
+  }
+
+  .gp-mcp-client__identity {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .gp-mcp-client__identity strong {
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .gp-mcp-client__identity > span {
+    color: var(--text-faint);
+    font-size: 0.78rem;
+  }
+
+  .gp-mcp-client summary > code {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .gp-mcp-client summary svg {
+    inline-size: 1rem;
+    block-size: 1rem;
+    transition: transform 160ms ease;
+  }
+
+  .gp-mcp-client[open] summary svg {
+    transform: rotate(180deg);
+  }
+
+  .gp-mcp-client__body {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(13rem, 0.68fr) minmax(0, 1.32fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    padding: 0 0 2rem;
+  }
+
+  .gp-mcp-client__steps {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .gp-mcp-client__steps ol {
+    padding-inline-start: 1.25rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .gp-mcp-client__steps li + li {
+    margin-block-start: 0.55rem;
+  }
+
+  .gp-mcp-client__steps a {
+    color: var(--accent);
+    font-size: 0.84rem;
+    text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .gp-mcp-client[open] .gp-mcp-client__body {
+      animation: gp-mcp-client-open 180ms ease-out both;
+    }
+  }
+
+  @keyframes gp-mcp-client-open {
+    from {
+      opacity: 0;
+      transform: translateY(-0.3rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .gp-mcp-client summary {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.65rem 1rem;
+    }
+
+    .gp-mcp-client summary > code {
+      grid-column: 1;
+    }
+
+    .gp-mcp-client summary svg {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+
+    .gp-mcp-client__body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

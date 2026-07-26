@@ -159,9 +159,9 @@ export const routes: Record<RouteKey, {
   mcp: {
     href: '/mcp/',
     nav: 'MCP',
-    title: 'GlyphPact MCP server for Claude Code and Codex',
+    title: 'Install and use the GlyphPact MCP server',
     description:
-      'Install GlyphPact’s local stdio MCP server for Claude Code and Codex. Audit SVG icon packs, build and check deterministic Flutter icon fonts, and page validated reports without uploading artwork.',
+      'Install GlyphPact MCP in Claude Code, Codex, Antigravity, Cursor, JetBrains, VS Code, Zed, Windsurf, Gemini CLI, and other local stdio clients. Includes setup, tools, prompts, workflow, and safety boundaries.',
     short: 'MCP integration',
     inNav: true,
   },

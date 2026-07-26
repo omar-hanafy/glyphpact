@@ -68,7 +68,7 @@ export const faq: FaqEntry[] = [
     answer: [
       'Yes. GlyphPact is a command-line compiler that runs locally. Compiling a pack involves no network access: there is no website step, no project service, and no server that receives your artwork. Installation itself needs the network once, to fetch the package.',
     ],
-    pages: ['home', 'icomoon'],
+    pages: ['home', 'mcp', 'icomoon'],
   },
   {
     id: 'uploads',
@@ -76,7 +76,7 @@ export const faq: FaqEntry[] = [
     answer: [
       'No. Source SVGs are read from disk and all compilation happens in the local process. Nothing is transmitted, so unreleased or licence-restricted artwork never leaves the machine or the build runner.',
     ],
-    pages: ['home', 'icomoon'],
+    pages: ['home', 'mcp', 'icomoon'],
   },
   {
     id: 'outside-flutter',
@@ -161,13 +161,32 @@ export const faq: FaqEntry[] = [
   },
   {
     id: 'agents',
-    question: 'Can Claude Code or Codex drive GlyphPact directly?',
+    question: 'Which coding agents can use the GlyphPact MCP server?',
     answer: [
-      'Yes. The repository ships an optional plugin for Claude Code and Codex that bundles the release wheel and starts a local stdio MCP server, without needing a source checkout or a global install.',
-      'It exposes four tools: audit an SVG file or directory and page a stable local snapshot of the findings, build the output declared by a checked-in config, check committed output for staleness without rewriting artifacts, and page through large machine-readable reports. The config, report, and CLI-result JSON schemas are exposed as MCP resources so an agent can validate what it reads. The audit and report tools are annotated read-only, and the server runs locally over stdio.',
+      'Any client that can start a local stdio MCP server can use GlyphPact. The documented setups cover Claude Code, Codex, Antigravity, Cursor, JetBrains AI Assistant, VS Code, Zed, Windsurf, and Gemini CLI. Clients use different JSON keys, TOML sections, and config locations, but each one launches the same published glyphpact-mcp process.',
+      'The server has four tools: audit an SVG file or directory and page a stable local findings snapshot, build the output declared by a config, check generated output for staleness without rewriting the artifact set, and page a published report. It also exposes the config, report, and inner CLI-result JSON Schemas as MCP resources.',
     ],
-    more: { label: 'Plugin guide', href: site.links.pluginGuide },
+    more: { label: 'MCP installation and tool reference', href: '/mcp/' },
     pages: ['home', 'mcp'],
+  },
+  {
+    id: 'mcp-plugin-or-manual',
+    question: 'Should I install the full plugin or configure MCP manually?',
+    answer: [
+      'Use the full plugin in Claude Code or Codex when you want the MCP server plus the sync-flutter-svg-icons skill. The skill guides project inspection, codepoint compatibility, Flutter font wiring, analysis, target builds, launch, and rendered glyph comparison. The host starts the bundled MCP server after plugin installation.',
+      'Use manual MCP configuration in another stdio client, or when you only want the four MCP tools and three schema resources. A manual entry runs the published glyphpact[mcp] package and does not install the plugin skill.',
+    ],
+    more: { label: 'Full plugin payload', href: site.links.pluginGuide },
+    pages: ['mcp'],
+  },
+  {
+    id: 'mcp-updates',
+    question: 'Does a manual MCP configuration update automatically?',
+    answer: [
+      'No. The manual snippets pin a specific GlyphPact release so the command keeps running the version you chose. When a new release is available, replace the version in the client configuration and restart or reload the server.',
+      'Marketplace plugin updates and manual MCP version changes are separate. Installing the full plugin in Claude Code or Codex keeps the MCP server inside the plugin update path; a pasted client configuration remains under the user\'s control.',
+    ],
+    pages: ['mcp'],
   },
 ];
 

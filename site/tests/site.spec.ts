@@ -134,6 +134,110 @@ test('MCP tab opens the first-class guide and marks the current route', async ({
   await expect(mobileTab).toHaveAttribute('aria-current', 'page');
 });
 
+test('MCP guide documents the portable server without leaking plugin-cache paths', async ({
+  page,
+}) => {
+  await page.goto('/glyphpact/mcp/');
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Run GlyphPact from the agent you already use',
+  );
+  await expect(page.locator('.gp-mcp-client')).toHaveCount(10);
+  await expect(page.locator('.gp-mcp-tool')).toHaveCount(4);
+  await expect(page.locator('.gp-mcp-resources > div')).toHaveCount(3);
+
+  for (const client of [
+    'Antigravity / Agy',
+    'Cursor',
+    'JetBrains AI Assistant',
+    'VS Code / GitHub Copilot',
+    'Zed',
+    'Windsurf / Devin Desktop',
+    'Gemini CLI',
+    'Claude Code, manual MCP',
+    'Codex, manual MCP',
+    'Other stdio MCP clients',
+  ]) {
+    await expect(page.getByText(client, { exact: true }).first()).toBeVisible();
+  }
+
+  const manualCode = await page
+    .locator('.gp-mcp-clients pre')
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? '').join('\n'));
+  expect(manualCode).toContain('glyphpact[mcp]==1.0.1');
+  expect(manualCode).toContain('"type": "stdio"');
+  expect(manualCode).toContain('"servers"');
+  expect(manualCode).toContain('"context_servers"');
+  expect(manualCode).toContain('[mcp_servers.glyphpact]');
+  expect(manualCode).not.toContain('CLAUDE_PLUGIN_ROOT');
+});
+
+test('MCP client anchors open the requested native configuration', async ({ page }) => {
+  await page.goto('/glyphpact/mcp/#client-vscode');
+
+  const vscode = page.locator('#client-vscode');
+  await expect(vscode).toHaveAttribute('open', '');
+  await expect(vscode.locator('pre')).toContainText('"servers"');
+
+  await page
+    .locator('.gp-mcp-clients__jump')
+    .getByRole('link', { name: 'Cursor', exact: true })
+    .click();
+  const cursor = page.locator('#client-cursor');
+  await expect(cursor).toHaveAttribute('open', '');
+  await expect(cursor.locator('pre')).toContainText('"type": "stdio"');
+  await expect(page).toHaveURL(/#client-cursor$/);
+});
+
+test('every JSON client uses the same pinned GlyphPact stdio launcher', async ({ page }) => {
+  await page.goto('/glyphpact/mcp/');
+
+  const expectedArgs = [
+    'tool',
+    'run',
+    '--quiet',
+    '--no-progress',
+    '--color',
+    'never',
+    '--no-config',
+    '--isolated',
+    '--from',
+    'glyphpact[mcp]==1.0.1',
+    'glyphpact-mcp',
+  ];
+
+  for (const { id, root } of [
+    { id: 'antigravity', root: 'mcpServers' },
+    { id: 'cursor', root: 'mcpServers' },
+    { id: 'jetbrains', root: 'mcpServers' },
+    { id: 'vscode', root: 'servers' },
+    { id: 'zed', root: 'context_servers' },
+    { id: 'windsurf', root: 'mcpServers' },
+    { id: 'gemini-cli', root: 'mcpServers' },
+    { id: 'generic', root: 'mcpServers' },
+  ]) {
+    const raw = await page.locator(`#client-${id} pre`).textContent();
+    const parsed = JSON.parse(raw ?? '{}');
+    expect(parsed[root].glyphpact.command, id).toBe('uv');
+    expect(parsed[root].glyphpact.args, id).toEqual(expectedArgs);
+  }
+});
+
+test('MCP install modes keep the plugin and manual server boundaries distinct', async ({
+  page,
+}) => {
+  await page.goto('/glyphpact/mcp/');
+
+  const install = page.locator('#install');
+  await expect(install.getByRole('heading', { name: 'Full plugin', exact: true })).toBeVisible();
+  await expect(
+    install.getByRole('heading', { name: 'MCP server only', exact: true }),
+  ).toBeVisible();
+  await expect(install).toContainText('sync-flutter-svg-icons');
+  await expect(install).toContainText('Version pinned until you update the entry');
+  await expect(install).toContainText('Do not add a second manual GlyphPact MCP entry');
+});
+
 test('four-card homepage grids form balanced rows', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/glyphpact/');
@@ -165,7 +269,6 @@ test('secondary heroes balance the decision copy and workflow proof', async ({ p
 
   for (const route of [
     '/glyphpact/flutter/',
-    '/glyphpact/mcp/',
     '/glyphpact/vs/icomoon/',
     '/glyphpact/vs/fluttericon/',
   ]) {
@@ -180,6 +283,20 @@ test('secondary heroes balance the decision copy and workflow proof', async ({ p
     expect(diagram!.width).toBeGreaterThan(430);
     expect(diagram!.x).toBeGreaterThan(copy!.x + copy!.width);
   }
+});
+
+test('MCP hero balances its decision copy and local process map', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/glyphpact/mcp/');
+
+  const copy = await page.locator('.gp-secondary-hero__body').boundingBox();
+  const route = await page.locator('.gp-secondary-hero .gp-mcp-route').boundingBox();
+
+  expect(copy).not.toBeNull();
+  expect(route).not.toBeNull();
+  expect(copy!.width).toBeGreaterThan(300);
+  expect(route!.width).toBeGreaterThan(430);
+  expect(route!.x).toBeGreaterThan(copy!.x + copy!.width);
 });
 
 test('comparison workflow lanes remain readable at desktop width', async ({ page }) => {
