@@ -348,8 +348,8 @@ export const dimensions: Dimension[] = [
     cells: {
       glyphpact: {
         support: 'yes',
-        value: 'Claude Code and Codex plugin',
-        note: 'A local stdio MCP server exposes `audit_icon_pack`, `build_icon_font`, `check_icon_font`, and `read_icon_report`, plus the config, report, and CLI-result schemas as resources.',
+        value: 'Local stdio MCP server',
+        note: 'Claude Code and Codex can install the full plugin. Other stdio MCP clients can configure the published server directly. It exposes four tools plus the config, report, and inner CLI-result schemas.',
       },
       icomoon: { support: 'no', value: 'Not offered' },
       fluttericon: { support: 'no', value: 'Not offered' },

@@ -61,7 +61,7 @@ export function softwareSchema(): Record<string, unknown> {
       'Explicit two-axis fidelity policy for unsupported SVG features',
       'CI staleness verification with a dedicated check mode',
       'Generated artwork attribution record',
-      'Local Claude Code and Codex plugin over MCP',
+      'Local stdio MCP server with a Claude Code and Codex plugin',
     ],
     keywords:
       'svg to icon font, icon font generator, stable codepoints, flutter icon font, svg to otf, iconfont lock, deterministic build',

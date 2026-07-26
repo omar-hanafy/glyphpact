@@ -1,0 +1,337 @@
+---
+import BrandMark from './BrandMark.astro';
+---
+
+<figure class="gp-mcp-route" aria-labelledby="mcp-route-title">
+  <figcaption>
+    <span>Local process map</span>
+    <strong id="mcp-route-title">One server, many MCP clients</strong>
+  </figcaption>
+
+  <div class="gp-mcp-route__canvas">
+    <ul class="gp-mcp-route__clients" aria-label="Compatible client examples">
+      <li>Claude Code</li>
+      <li>Codex</li>
+      <li>Antigravity</li>
+      <li>Cursor</li>
+      <li>JetBrains</li>
+      <li>VS Code</li>
+    </ul>
+
+    <div class="gp-mcp-route__wire" aria-hidden="true">
+      <span></span>
+    </div>
+
+    <div class="gp-mcp-route__server">
+      <BrandMark size="1.4rem" />
+      <div>
+        <span>local stdio</span>
+        <strong>glyphpact-mcp</strong>
+      </div>
+    </div>
+  </div>
+
+  <dl class="gp-mcp-route__facts">
+    <div>
+      <dt>Tools</dt>
+      <dd>4</dd>
+    </div>
+    <div>
+      <dt>Schema resources</dt>
+      <dd>3</dd>
+    </div>
+    <div>
+      <dt>SVG uploads</dt>
+      <dd>0</dd>
+    </div>
+  </dl>
+</figure>
+
+<style>
+  .gp-mcp-route {
+    min-width: 0;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--gp-radius-lg);
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      var(--bg-sunken);
+    background-size: 2rem 2rem;
+    overflow: hidden;
+  }
+
+  .gp-mcp-route figcaption {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border-block-end: 1px solid var(--rule);
+    background: color-mix(in srgb, var(--bg-raised) 94%, transparent);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    font-family: var(--gp-font-mono);
+  }
+
+  .gp-mcp-route figcaption span {
+    color: var(--text-faint);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .gp-mcp-route figcaption strong {
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .gp-mcp-route__canvas {
+    display: grid;
+    grid-template-columns: minmax(10rem, 0.9fr) minmax(3.5rem, 0.32fr) minmax(10rem, 0.8fr);
+    align-items: center;
+    min-height: 18rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  .gp-mcp-route__clients {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-route__clients li {
+    min-width: 0;
+    padding: 0.7rem 0.75rem 0.7rem 1.25rem;
+    border-block-end: 1px solid var(--rule);
+    color: var(--text-muted);
+    font-family: var(--gp-font-mono);
+    font-size: 0.72rem;
+    position: relative;
+  }
+
+  .gp-mcp-route__clients li:nth-child(odd) {
+    border-inline-end: 1px solid var(--rule);
+  }
+
+  .gp-mcp-route__clients li::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0.7rem;
+    inset-block-start: 50%;
+    inline-size: 0.3rem;
+    block-size: 0.3rem;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .gp-mcp-route__wire {
+    block-size: 1px;
+    background: var(--rule-strong);
+    position: relative;
+  }
+
+  .gp-mcp-route__wire::before,
+  .gp-mcp-route__wire::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inline-size: 0.35rem;
+    block-size: 0.35rem;
+    border-radius: 50%;
+    background: var(--accent);
+    transform: translateY(-50%);
+  }
+
+  .gp-mcp-route__wire::before {
+    inset-inline-start: 0;
+  }
+
+  .gp-mcp-route__wire::after {
+    inset-inline-end: 0;
+  }
+
+  .gp-mcp-route__wire span {
+    position: absolute;
+    inset-block-start: -1px;
+    inset-inline-start: 0;
+    inline-size: 38%;
+    block-size: 3px;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+
+  .gp-mcp-route__server {
+    min-width: 0;
+    min-height: 6.5rem;
+    padding: 1rem;
+    border: 1px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 7%, var(--bg-sunken));
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+
+  .gp-mcp-route__server :global(svg) {
+    color: var(--accent);
+    flex: none;
+  }
+
+  .gp-mcp-route__server div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .gp-mcp-route__server span {
+    color: color-mix(in srgb, var(--accent) 70%, var(--text));
+    font-family: var(--gp-font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .gp-mcp-route__server strong {
+    overflow-wrap: anywhere;
+    font-family: var(--gp-font-mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .gp-mcp-route__facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-block-start: 1px solid var(--rule);
+    background: var(--bg-sunken);
+  }
+
+  .gp-mcp-route__facts > div {
+    min-width: 0;
+    padding: 0.85rem 1rem;
+  }
+
+  .gp-mcp-route__facts > div + div {
+    border-inline-start: 1px solid var(--rule);
+  }
+
+  .gp-mcp-route__facts dt {
+    color: var(--text-faint);
+    font-family: var(--gp-font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .gp-mcp-route__facts dd {
+    margin: 0.2rem 0 0;
+    color: var(--text);
+    font-family: var(--gp-font-mono);
+    font-size: 1rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .gp-mcp-route__clients li::before {
+      animation: gp-mcp-client-live 2.8s ease-in-out infinite;
+    }
+
+    .gp-mcp-route__clients li:nth-child(2)::before {
+      animation-delay: 180ms;
+    }
+
+    .gp-mcp-route__clients li:nth-child(3)::before {
+      animation-delay: 360ms;
+    }
+
+    .gp-mcp-route__clients li:nth-child(4)::before {
+      animation-delay: 540ms;
+    }
+
+    .gp-mcp-route__clients li:nth-child(5)::before {
+      animation-delay: 720ms;
+    }
+
+    .gp-mcp-route__clients li:nth-child(6)::before {
+      animation-delay: 900ms;
+    }
+
+    .gp-mcp-route__wire span {
+      animation: gp-mcp-route-signal 1.8s ease-in-out infinite;
+    }
+  }
+
+  @keyframes gp-mcp-client-live {
+    0%,
+    65%,
+    100% {
+      opacity: 0.42;
+    }
+    18% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes gp-mcp-route-signal {
+    from {
+      transform: translateX(-15%);
+      opacity: 0;
+    }
+    20%,
+    75% {
+      opacity: 1;
+    }
+    to {
+      transform: translateX(205%);
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 38rem) {
+    .gp-mcp-route figcaption {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .gp-mcp-route__canvas {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.2rem;
+    }
+
+    .gp-mcp-route__wire {
+      inline-size: 1px;
+      block-size: 2.5rem;
+      margin-inline: auto;
+    }
+
+    .gp-mcp-route__wire::before {
+      inset-block-start: 0;
+      inset-inline-start: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .gp-mcp-route__wire::after {
+      inset-block-start: auto;
+      inset-block-end: 0;
+      inset-inline-end: auto;
+      inset-inline-start: 50%;
+      transform: translate(-50%, 50%);
+    }
+
+    .gp-mcp-route__wire span {
+      display: none;
+    }
+
+    .gp-mcp-route__facts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gp-mcp-route__facts > div + div {
+      border-inline-start: 0;
+      border-block-start: 1px solid var(--rule);
+    }
+  }
+</style>
