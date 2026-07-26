@@ -249,7 +249,14 @@ if (!existsSync(sitemapIndex)) {
     }
   }
 
-  const expected = ['/', '/stable-codepoints/', '/flutter/', '/vs/icomoon/', '/vs/fluttericon/'];
+  const expected = [
+    '/',
+    '/stable-codepoints/',
+    '/flutter/',
+    '/mcp/',
+    '/vs/icomoon/',
+    '/vs/fluttericon/',
+  ];
   for (const route of expected) {
     if (!urls.some((u) => u === `${ORIGIN}${BASE}${route}`)) {
       failures.push(`Sitemap is missing the expected route ${route}.`);

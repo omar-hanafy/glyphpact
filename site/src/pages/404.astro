@@ -12,7 +12,7 @@ import BrandMark from '../components/BrandMark.astro';
 
 <Base
   title="Page not found"
-  description="That page does not exist on the GlyphPact site. Links to the overview, the stable-codepoints explainer, the Flutter guide, and the comparisons."
+  description="That page does not exist on the GlyphPact site. Links to the overview, stable-codepoints explainer, Flutter and MCP guides, and comparisons."
   canonical="/404/"
   ogSlug="404"
   noindex
@@ -38,6 +38,10 @@ import BrandMark from '../components/BrandMark.astro';
       <li>
         <a href={path(routes.flutter.href)}>Flutter integration</a>
         <span>Pubspec setup, generated IconData, layered icons, and CI.</span>
+      </li>
+      <li>
+        <a href={path(routes.mcp.href)}>MCP for coding agents</a>
+        <span>Plugin installation, local tools, schemas, and mutation boundaries.</span>
       </li>
       <li>
         <a href={path(routes.vsIcomoon.href)}>Compared with IcoMoon</a>

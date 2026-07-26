@@ -5,6 +5,7 @@ const pages = [
   '/glyphpact/',
   '/glyphpact/stable-codepoints/',
   '/glyphpact/flutter/',
+  '/glyphpact/mcp/',
   '/glyphpact/vs/icomoon/',
   '/glyphpact/vs/fluttericon/',
   '/glyphpact/404.html',
@@ -110,6 +111,29 @@ test('donation link remains visible in the mobile menu', async ({ page }) => {
   await expect(support).toHaveAttribute('href', 'https://buymeacoffee.com/omar.hanafy');
 });
 
+test('MCP tab opens the first-class guide and marks the current route', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/glyphpact/');
+
+  const desktopTab = page
+    .locator('.gp-nav--desktop')
+    .getByRole('link', { name: 'MCP', exact: true });
+  await expect(desktopTab).toHaveAttribute('href', '/glyphpact/mcp/');
+  await expect(desktopTab).not.toHaveAttribute('aria-current', 'page');
+
+  await page.goto('/glyphpact/mcp/');
+  await expect(desktopTab).toHaveAttribute('aria-current', 'page');
+
+  await page.setViewportSize({ width: 375, height: 844 });
+  await page.locator('.gp-mobile-nav summary').click();
+  const mobileTab = page
+    .locator('.gp-mobile-nav__panel')
+    .getByRole('link', { name: 'MCP', exact: true });
+  await expect(mobileTab).toBeVisible();
+  await expect(mobileTab).toHaveAttribute('href', '/glyphpact/mcp/');
+  await expect(mobileTab).toHaveAttribute('aria-current', 'page');
+});
+
 test('four-card homepage grids form balanced rows', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/glyphpact/');
@@ -141,6 +165,7 @@ test('secondary heroes balance the decision copy and workflow proof', async ({ p
 
   for (const route of [
     '/glyphpact/flutter/',
+    '/glyphpact/mcp/',
     '/glyphpact/vs/icomoon/',
     '/glyphpact/vs/fluttericon/',
   ]) {
@@ -331,6 +356,7 @@ for (const colorScheme of ['dark', 'light'] as const) {
 
     for (const route of [
       '/glyphpact/flutter/',
+      '/glyphpact/mcp/',
       '/glyphpact/vs/icomoon/',
       '/glyphpact/vs/fluttericon/',
     ]) {

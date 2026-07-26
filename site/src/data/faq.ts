@@ -20,7 +20,7 @@ export interface FaqEntry {
   answer: string[];
   more?: { label: string; href: string };
   /** Which pages render this entry. */
-  pages: Array<'home' | 'codepoints' | 'flutter' | 'icomoon' | 'fluttericon'>;
+  pages: Array<'home' | 'codepoints' | 'flutter' | 'mcp' | 'icomoon' | 'fluttericon'>;
 }
 
 export const faq: FaqEntry[] = [
@@ -167,7 +167,7 @@ export const faq: FaqEntry[] = [
       'It exposes four tools: audit an SVG file or directory and page a stable local snapshot of the findings, build the output declared by a checked-in config, check committed output for staleness without rewriting artifacts, and page through large machine-readable reports. The config, report, and CLI-result JSON schemas are exposed as MCP resources so an agent can validate what it reads. The audit and report tools are annotated read-only, and the server runs locally over stdio.',
     ],
     more: { label: 'Plugin guide', href: site.links.pluginGuide },
-    pages: ['home'],
+    pages: ['home', 'mcp'],
   },
 ];
 
