@@ -95,6 +95,11 @@
       "maxLength": 4096,
       "description": "Relative artifact path. Runtime enforces 4096 UTF-8 bytes total and 255 UTF-8 bytes per component."
     },
+    "catalog": {
+      "type": "boolean",
+      "default": false,
+      "description": "Emit a static-const <className>Catalog companion in the generated Dart library with every glyph keyed by its Dart name."
+    },
     "lockFile": {
       "type": "string",
       "minLength": 1,

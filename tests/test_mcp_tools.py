@@ -122,6 +122,67 @@ def test_build_check_and_paginated_report(tmp_path: Path) -> None:
     assert report["glyphs"]["total"] == 1
     assert report["glyphs"]["items"][0]["source"] == "square.svg"
 
+    legacy_payload = json.loads(report_path.read_text(encoding="utf-8"))
+    legacy_payload["schemaVersion"] = 2
+    legacy_payload.pop("codepointsRemaining")
+    legacy_payload.pop("rangeUtilization")
+    report_path.write_text(json.dumps(legacy_payload), encoding="utf-8")
+    legacy = read_icon_report(str(report_path), offset=0, limit=1)
+    assert legacy["summary"]["schemaVersion"] == 2
+    assert "codepointsRemaining" not in legacy["summary"]
+    assert "rangeUtilization" not in legacy["summary"]
+
+
+def test_build_check_and_report_surface_capacity_warning(tmp_path: Path) -> None:
+    icons, config = _write_pack(tmp_path)
+    for index in range(1, 4):
+        (icons / f"square_{index}.svg").write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            f"<!-- icon {index} -->"
+            '<path d="M2 2h20v20H2z"/></svg>',
+            encoding="utf-8",
+        )
+    payload = json.loads(config.read_text(encoding="utf-8"))
+    payload["startCodepoint"] = "0xF8FB"
+    config.write_text(json.dumps(payload), encoding="utf-8")
+
+    built = asyncio.run(build_icon_font(str(config)))
+    assert built["ok"] is True
+    assert "CODEPOINT_RANGE_NEAR_EXHAUSTION" in built["stderr"]
+    assert built["result"]["schemaVersion"] == 2
+
+    checked = asyncio.run(check_icon_font(str(config)))
+    assert checked["ok"] is True
+    assert "CODEPOINT_RANGE_NEAR_EXHAUSTION" in checked["stderr"]
+
+    report_path = tmp_path / "generated" / "iconfont.report.json"
+    report = read_icon_report(str(report_path))
+    assert report["summary"]["schemaVersion"] == 3
+    assert report["summary"]["codepointsRemaining"] == 1
+    assert report["summary"]["rangeUtilization"] == 4 / 5
+
+
+def test_catalog_build_keeps_mcp_and_report_contracts_stable(tmp_path: Path) -> None:
+    _, config = _write_pack(tmp_path)
+    payload = json.loads(config.read_text(encoding="utf-8"))
+    payload["catalog"] = True
+    config.write_text(json.dumps(payload), encoding="utf-8")
+
+    built = asyncio.run(build_icon_font(str(config)))
+    checked = asyncio.run(check_icon_font(str(config)))
+
+    assert built["ok"] is True
+    assert checked["ok"] is True
+    result = built["result"]
+    assert "catalog" not in result
+    assert "catalogFile" not in result
+    dart = (tmp_path / "generated" / "test_icons.dart").read_text(encoding="utf-8")
+    assert "abstract final class TestIconsCatalog" in dart
+    report = json.loads(
+        (tmp_path / "generated" / "iconfont.report.json").read_text(encoding="utf-8")
+    )
+    assert set(report["dart"]) == {"className", "file", "fontPackage"}
+
 
 def test_check_maps_drift_to_stale(tmp_path: Path) -> None:
     _, config = _write_pack(tmp_path)

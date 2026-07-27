@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from collections import Counter
 from pathlib import Path
@@ -14,6 +15,9 @@ from glyphpact.cli import main
 
 PROJECT_ROOT = Path(__file__).parents[1]
 SCHEMA_ROOT = PROJECT_ROOT / "schema"
+PUBLISHED_REPORT_V2_SHA256 = "b5327cd0d8a48dad2487cfcf2440b4f8f6713bc50c9d59c807a0c9b864286a61"
+PUBLISHED_REPORT_V1_SHA256 = "7d4bbfbeb54ee76bf4702f129a882cb0a9ee1ff78ec036cb858f0a141f9b7ceb"
+PUBLISHED_REPORT_DEFS_SHA256 = "7e9b6d20a6a2b88b3032527b56342f780fa4dfad4c01ea8622926c3a3ee6d25a"
 
 
 def _schema(name: str) -> dict[str, Any]:
@@ -28,6 +32,19 @@ def _records(items: list[dict[str, Any]]) -> Counter[str]:
     return Counter(json.dumps(item, sort_keys=True) for item in items)
 
 
+def _canonical_sha256(value: object) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _as_report_v2(report: dict[str, Any]) -> dict[str, Any]:
+    legacy = copy.deepcopy(report)
+    legacy["schemaVersion"] = 2
+    legacy.pop("codepointsRemaining")
+    legacy.pop("rangeUtilization")
+    return legacy
+
+
 def test_published_schemas_are_valid_draft_2020_12_and_example_config_conforms() -> None:
     for path in sorted(SCHEMA_ROOT.glob("*.schema.json")):
         Draft202012Validator.check_schema(json.loads(path.read_text(encoding="utf-8")))
@@ -40,6 +57,89 @@ def test_published_schemas_are_valid_draft_2020_12_and_example_config_conforms()
     assert not config_validator.is_valid(
         {"input": "icons", "output": "generated", "startCodepoint": " 0xE000 "}
     )
+
+
+def test_catalog_is_config_only_and_report_versions_remain_closed() -> None:
+    config_schema = _schema("icon-font-config.schema.json")
+    catalog = config_schema["properties"]["catalog"]
+    assert catalog["type"] == "boolean"
+    assert catalog["default"] is False
+    validator = _validator("icon-font-config.schema.json")
+    assert validator.is_valid({"input": "icons", "output": "generated", "catalog": True})
+    assert not validator.is_valid(
+        {"input": "icons", "output": "generated", "catalogFile": "icons.catalog.dart"}
+    )
+
+    report_schema = _schema("icon-font-report.schema.json")
+    assert [entry["$ref"] for entry in report_schema["oneOf"]] == [
+        "#/$defs/reportV3",
+        "#/$defs/reportV2",
+        "#/$defs/reportV1",
+    ]
+    dart_schema = report_schema["$defs"]["dart"]
+    assert dart_schema["additionalProperties"] is False
+    assert set(dart_schema["required"]) == {"className", "file", "fontPackage"}
+    assert set(dart_schema["properties"]) == {"className", "file", "fontPackage"}
+    assert _canonical_sha256(report_schema["$defs"]["reportV2"]) == PUBLISHED_REPORT_V2_SHA256
+    assert _canonical_sha256(report_schema["$defs"]["reportV1"]) == PUBLISHED_REPORT_V1_SHA256
+    published_defs = {
+        name: definition
+        for name, definition in report_schema["$defs"].items()
+        if name != "reportV3"
+    }
+    assert _canonical_sha256(published_defs) == PUBLISHED_REPORT_DEFS_SHA256
+
+
+def test_catalog_enabled_report_validates_against_report_v3(
+    tmp_path: Path, simple_svg: str, capsys
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "icon.svg", simple_svg)
+
+    assert (
+        main(
+            [
+                str(inputs),
+                "--output",
+                str(output),
+                "--name",
+                "SchemaIcons",
+                "--catalog",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    report = json.loads((output / "iconfont.report.json").read_text(encoding="utf-8"))
+
+    assert report["schemaVersion"] == 3
+    assert report["codepointsRemaining"] == 6_399
+    assert report["rangeUtilization"] == 1 / 6_400
+    validator = _validator("icon-font-report.schema.json")
+    validator.validate(report)
+
+    legacy_v2 = _as_report_v2(report)
+    validator.validate(legacy_v2)
+
+    v2_with_new_field = copy.deepcopy(legacy_v2)
+    v2_with_new_field["codepointsRemaining"] = 6_399
+    assert not validator.is_valid(v2_with_new_field)
+    v3_without_capacity = copy.deepcopy(report)
+    v3_without_capacity.pop("rangeUtilization")
+    assert not validator.is_valid(v3_without_capacity)
+
+    report_schema = _schema("icon-font-report.schema.json")
+    v1_properties = report_schema["$defs"]["reportV1"]["properties"]
+    glyph_v1_properties = report_schema["$defs"]["glyphV1"]["properties"]
+    legacy_v1 = {key: copy.deepcopy(value) for key, value in report.items() if key in v1_properties}
+    legacy_v1["schemaVersion"] = 1
+    legacy_v1["glyphs"] = [
+        {key: copy.deepcopy(value) for key, value in glyph.items() if key in glyph_v1_properties}
+        for glyph in report["glyphs"]
+    ]
+    validator.validate(legacy_v1)
 
 
 @pytest.mark.parametrize(
@@ -99,7 +199,9 @@ def test_each_success_quality_validates_against_cli_and_report_schemas(
 
     assert cli_payload["quality"] == report["quality"] == quality
     _validator("cli-result.schema.json").validate(cli_payload)
-    _validator("icon-font-report.schema.json").validate(report)
+    report_validator = _validator("icon-font-report.schema.json")
+    report_validator.validate(report)
+    report_validator.validate(_as_report_v2(report))
 
 
 def test_current_mixed_outcome_payloads_validate_and_preserve_semantic_counts(
@@ -169,6 +271,9 @@ def test_current_mixed_outcome_payloads_validate_and_preserve_semantic_counts(
         glyph["conversion"] == "approximated" for glyph in report["glyphs"]
     )
     assert report["issueCount"] == len(report["issues"])
+    consumed = report["glyphCount"] + report["retiredCodepointCount"]
+    assert report["codepointsRemaining"] + consumed == 6_400
+    assert report["rangeUtilization"] == consumed / 6_400
     nested_issues = [issue for glyph in report["glyphs"] for issue in glyph["issues"]]
     nested_issues.extend(
         issue for skipped_icon in report["skippedIcons"] for issue in skipped_icon["issues"]
@@ -259,7 +364,9 @@ def test_scoped_layered_fallback_validates_under_global_strict_lossy_policy(
     assert len(cli_payload["layerFonts"]) == 2
     assert report["glyphs"][0]["layeredRendering"]["lossless"] is True
     _validator("cli-result.schema.json").validate(cli_payload)
-    _validator("icon-font-report.schema.json").validate(report)
+    report_validator = _validator("icon-font-report.schema.json")
+    report_validator.validate(report)
+    report_validator.validate(_as_report_v2(report))
 
     forged_cli = copy.deepcopy(cli_payload)
     forged_cli["issues"][0]["details"].pop("scope")

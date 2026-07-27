@@ -1040,6 +1040,8 @@ def read_icon_report(
         "skippedIconCount",
         "issueCount",
         "retiredCodepointCount",
+        "codepointsRemaining",
+        "rangeUtilization",
         "font",
         "layerFonts",
         "dart",

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/omar-hanafy/glyphpact/v1.0.1/brand/glyphpact-icon.svg" alt="" width="72" height="72">
+  <img src="https://raw.githubusercontent.com/omar-hanafy/glyphpact/v1.1.0/brand/glyphpact-icon.svg" alt="" width="72" height="72">
 </p>
 
 <h1 align="center">GlyphPact</h1>
@@ -53,7 +53,7 @@ uv tool upgrade glyphpact
 Pin the version in CI or any other reproducible environment:
 
 ```bash
-uv tool install glyphpact==1.0.1
+uv tool install glyphpact==1.1.0
 ```
 
 Compile a Flutter icon pack:
@@ -72,7 +72,7 @@ uv run glyphpact --config examples/icon_font.json
 ```
 
 The example SVGs are original MIT-licensed fixtures. See
-[examples/README.md](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/examples/README.md).
+[examples/README.md](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/examples/README.md).
 
 ## Claude Code and Codex plugin
 
@@ -84,7 +84,7 @@ skill plus four local MCP tools:
 - check committed output for staleness without rewriting generated artifacts
 - page through large machine-readable reports
 
-The plugin bundles the exact GlyphPact 1.0.1 wheel, starts its MCP server
+The plugin bundles the exact GlyphPact 1.1.0 wheel, starts its MCP server
 automatically, and does not require a source checkout or global GlyphPact
 installation. Add this repository as a marketplace, then install the plugin.
 
@@ -104,7 +104,7 @@ codex plugin add glyphpact@glyphpact
 
 Start a new session after installation. Do not add a duplicate personal MCP
 configuration. See the
-[plugin guide](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/plugins/glyphpact/README.md)
+[plugin guide](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/plugins/glyphpact/README.md)
 for its runtime requirements, mutation boundary, and maintainer validation
 flow.
 
@@ -123,7 +123,7 @@ For `--name AppIcons`, GlyphPact owns the selected output directory and writes:
 ATTRIBUTION.md            artwork licensing and provenance
 fonts/AppIcons.otf        validated OpenType/CFF font
 layer_fonts/layer_*.otf   optional solid-alpha paint-order layers
-app_icons.dart            const Flutter IconData provider
+app_icons.dart            const provider and optional catalog companion
 iconfont.lock.json        stable codepoint and provenance registry
 iconfont.report.json      deterministic machine-readable build report
 ```
@@ -159,6 +159,66 @@ abstract final class AppIcons {
 }
 ```
 
+### Icon catalog
+
+Galleries, icon pickers, and coverage tests need every glyph by name. Hand
+maintaining that list defeats the point of generating the provider, so enable
+the catalog in the checked-in config:
+
+```json
+{
+  "className": "AppIcons",
+  "catalog": true
+}
+```
+
+```dart
+@flutter.staticIconProvider
+abstract final class AppIconsCatalog {
+  static const Map<String, flutter.IconData> byName =
+      <String, flutter.IconData>{
+        'back': AppIcons.back,
+      };
+}
+```
+
+`AppIconsCatalog` is a separate companion in the same generated Dart library.
+It contains only static const maps and carries Flutter's provider annotation so
+unreachable catalog declarations in this or another package are not mistaken
+for icon uses. Reachable map values remain visible to the tree shaker.
+`AppIcons` remains the base icon provider. A partial-alpha pack also annotates
+its static-const `AppIconsLayers` descriptor provider so Flutter can subset
+directly referenced layered icons independently. `byName` contains every
+emitted glyph in ascending codepoint order, keyed by its Dart member name. A
+build containing partial-alpha icons also emits
+`AppIconsCatalog.layeredByName`, containing only their lossless layered
+descriptors. Use normal map operations to derive names, values, entries, sorted
+lists, or sets without asking the compiler for another output shape:
+`.keys`, `.values`, `.entries`, `.keys.toList()`, `.values.toSet()`, or a
+consumer-side sort of a copied list.
+
+Enabling the catalog does not by itself enlarge a release: when the catalog is
+unreachable, Flutter removes it and continues to subset the font from the
+individual `AppIcons` constants used by the app. Making `byName` reachable
+retains every base glyph. Making `layeredByName` reachable retains those icons'
+fallbacks and layer-font glyphs. That bounded cost is appropriate for a
+shipping picker or gallery, but a catalog referenced only from tests has no
+release cost.
+
+Generated declaration regions whose legacy and current Dart layouts differ use
+narrowly scoped formatter controls. This includes catalog and layered
+descriptor declarations, plus an over-width base provider when needed. Their
+underlying layout is also canonical for Dart 3.0 through 3.6, whose formatters
+treat those controls as comments. Dart 3.7 and later honor the controls. In
+either case, running `dart format` over the project does not make a subsequent
+GlyphPact `--check` fail. The rest of the library remains formatter-owned. The
+narrow opt-outs exist because generated bytes participate in `--check`; custom
+formatting belongs in an external generator outside GlyphPact's owned output.
+
+Omit `catalog`, or set it to `false`, to leave the generated Dart API unchanged.
+The matching `--catalog` and `--no-catalog` flags override the config for a
+single invocation; keep the config enabled for a durable checked-in surface.
+
 When the font is shipped by a Dart package, pass its package name:
 
 ```bash
@@ -169,7 +229,7 @@ glyphpact assets/icons \
 ```
 
 See
-[Flutter integration](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/flutter-adoption.md)
+[Flutter integration](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/docs/flutter-adoption.md)
 for app fonts, package fonts, layered icons, CI checks, and accessibility
 notes.
 
@@ -202,6 +262,12 @@ use range, U+E000 through U+F8FF, provides 6,400 lifetime allocation slots.
 Active icons and tombstones both consume slots because codepoints are never
 recycled.
 
+Every schema v3 report records `codepointsRemaining` and `rangeUtilization`
+for the allocation window from the configured `startCodepoint` through the end
+of its private-use range. Builds emit `CODEPOINT_RANGE_NEAR_EXHAUSTION` at or
+above 80% utilization, including in `--check` mode. The warning remains a
+successful exit and is printed to stderr so `--json` stdout stays valid.
+
 For a larger pack, start in a supplementary private use range:
 
 ```bash
@@ -212,11 +278,13 @@ glyphpact assets/icons \
 ```
 
 A complete supplementary private use range provides 65,534 slots. Split a
-larger catalog into multiple independently versioned fonts.
+larger catalog into multiple independently versioned fonts. Choose the
+`startCodepoint` before the first build: an established lock rejects later
+changes rather than silently mixing allocation ranges.
 
 Performance depends heavily on SVG complexity, not just file count. GlyphPact
 does not publish a private-corpus headline. The
-[benchmark guide](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/benchmarking.md)
+[benchmark guide](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/docs/benchmarking.md)
 provides a reproducible local runner and reporting checklist for your own pack.
 
 ## Reproducible config
@@ -230,6 +298,7 @@ For repeat builds, check in a JSON config:
   "output": "lib/generated/app_icons",
   "fontFamily": "AppIcons",
   "className": "AppIcons",
+  "catalog": true,
   "fontPackage": null,
   "startCodepoint": "0xE000",
   "unitsPerEm": 1000,
@@ -261,6 +330,49 @@ glyphpact --config icon_font.json
 CLI flags override config values. `jobs: 0` selects up to eight bounded worker
 processes.
 
+### Report as a code-generation contract
+
+The built-in catalog covers the common Dart enumeration case. For a different
+collection type, variable name, order, or language, use
+`iconfont.report.json` as the lower-level code-generation input rather than
+parsing generated Dart.
+
+Report schema v3 guarantees the shape and meaning of `schemaVersion`,
+`font.family`, `font.file`, `font.sha256`, `dart.className`, `dart.file`,
+`dart.fontPackage`, `layerFonts`, and each `glyphs[].source`, `name`,
+`codepoint`, and `matchTextDirection`. `glyphs` contains active shipped glyphs
+only and is ordered by ascending codepoint. Partial-alpha records use
+`glyphs[].layeredRendering` to describe their ordered layers, families, files,
+codepoints, and opacities. Skipped sources live in `skippedIcons`, never in
+`glyphs`; retired assignments remain tombstones in `iconfont.lock.json`.
+`codepointsRemaining` is the number of unused assignments left in the
+configured allocation window, while `rangeUtilization` is its consumed
+fraction from `0` through `1`.
+
+Programmatic `build(...)` callers receive the same telemetry through the
+keyword-only `BuildResult.codepoints_remaining`,
+`BuildResult.range_utilization`, and `BuildResult.warnings` fields.
+
+Package releases and report schemas are versioned independently. GlyphPact
+1.1 generates report v3, while the published schema continues validating
+historical v1 and v2 reports. Report-driven generators must recognize v3 before
+upgrading; they should continue rejecting every unsupported `schemaVersion`.
+
+Codepoints are encoded as uppercase hexadecimal strings such as `0xE000`.
+Parse them with radix 16 only in build-time generators and artifact tests.
+Generated Dart should import `dart.file` and reference
+`<dart.className>.<glyph.name>` constants rather than constructing `IconData`
+dynamically at runtime. Reject an unsupported `schemaVersion` before generating
+code. GlyphPact does not remove, rename, add, or change the type or meaning of
+fields inside a published closed schema version; a report-shape change requires
+a new schema version.
+
+GlyphPact owns its entire configured output directory. Write custom generated
+files outside that directory, run the custom generator after GlyphPact, and
+give that output its own non-rewriting check. Consumers can then compare their
+generated surface with `glyphs` while GlyphPact `--check` continues to cover the
+font, provider, lock, report, and attribution artifacts.
+
 ## Fidelity policy
 
 A normal icon font stores monochrome alpha coverage, not source RGB colors.
@@ -286,7 +398,7 @@ glyphpact assets/icons \
   --unrepresentable skip
 ```
 
-Approximations and skips are typed records in CLI JSON and report schema v2.
+Approximations and skips are typed records in CLI JSON and report schema v3.
 They include the feature, classification, action, source, diagnostic code, and
 structured details when applicable.
 
@@ -316,7 +428,7 @@ same-codepoint font families:
 The generated Dart API includes a layered icon widget and layer descriptors.
 The ordinary `IconData` remains available as the explicitly selected
 single-glyph fallback. See
-[examples/layered_icon_font.json](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/examples/layered_icon_font.json)
+[examples/layered_icon_font.json](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/examples/layered_icon_font.json)
 for a runnable example.
 
 ## Supported SVG profile
@@ -333,7 +445,7 @@ GlyphPact resolves common icon geometry directly, including:
 Features that need a browser, external environment, animation runtime, or an
 unsupported compositing model are classified instead of guessed. The complete
 versioned contract is in the
-[SVG profile](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/svg-profile.md).
+[SVG profile](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/docs/svg-profile.md).
 
 ## Failure-safe output
 
@@ -362,9 +474,10 @@ Exit codes:
 - `2`: config, input, policy, geometry, or font contract failed
 - `3`: `--check` found stale output
 
-Use `--json` for stable machine-readable results. Successful result and report
-payloads use schema version 2. Lockfiles use schema version 1 because they
-record ABI allocation, not build policy.
+Use `--json` for stable machine-readable results. Successful CLI result
+payloads use schema version 2, deterministic reports use schema version 3, and
+lockfiles use schema version 1 because they record ABI allocation rather than
+build policy. Capacity warnings use stderr and do not corrupt JSON stdout.
 
 ## Development
 
@@ -389,7 +502,7 @@ npm run dev
 ```
 
 See
-[CONTRIBUTING.md](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/CONTRIBUTING.md)
+[CONTRIBUTING.md](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/CONTRIBUTING.md)
 for semantic and validation requirements.
 
 ## License and artwork
@@ -408,8 +521,8 @@ which is the single source of truth for the identity and documents how to
 replace it.
 
 See the
-[changelog](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/CHANGELOG.md),
-[architecture](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/docs/architecture.md),
-[security policy](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/SECURITY.md),
+[changelog](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/CHANGELOG.md),
+[architecture](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/docs/architecture.md),
+[security policy](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/SECURITY.md),
 and
-[third-party notice](https://github.com/omar-hanafy/glyphpact/blob/v1.0.1/NOTICE).
+[third-party notice](https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/NOTICE).

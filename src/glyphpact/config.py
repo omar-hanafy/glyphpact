@@ -8,7 +8,7 @@ import re
 import stat
 import unicodedata
 from collections.abc import Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import KW_ONLY, dataclass, field, replace
 from enum import Enum
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, cast
@@ -54,6 +54,7 @@ _CONFIG_KEYS = frozenset(
         "jobs",
         "fontFile",
         "dartFile",
+        "catalog",
         "lockFile",
         "reportFile",
         "copyright",
@@ -423,6 +424,8 @@ class BuildConfig:
     copyright: str | None = None
     text_fonts: Mapping[str, TextFont] = field(default_factory=dict)
     icons: Mapping[str, IconOverride] = field(default_factory=dict)
+    _: KW_ONLY
+    catalog: bool = False
 
     def validated(self) -> BuildConfig:
         for key, string_value in (
@@ -444,6 +447,8 @@ class BuildConfig:
                 )
         if type(self.clip_to_viewbox) is not bool:
             raise IconFontError("CONFIG_TYPE_INVALID", "clipToViewBox must be boolean.")
+        if type(self.catalog) is not bool:
+            raise IconFontError("CONFIG_TYPE_INVALID", "catalog must be boolean.")
         if not isinstance(self.policy, ConversionPolicy):
             raise IconFontError("CONFIG_TYPE_INVALID", "policy must be a ConversionPolicy.")
         for key, integer_value in (
@@ -780,6 +785,7 @@ class BuildConfig:
             copyright=self.copyright,
             text_fonts=normalized_text_fonts,
             icons=normalized_icons,
+            catalog=self.catalog,
         )
 
 
@@ -965,5 +971,6 @@ def load_config(path: Path) -> BuildConfig:
         copyright=_optional_string(raw.get("copyright"), "copyright"),
         text_fonts=text_fonts,
         icons=icons,
+        catalog=boolean("catalog", False),
     )
     return config.validated()

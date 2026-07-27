@@ -82,9 +82,9 @@ export const faq: FaqEntry[] = [
     id: 'outside-flutter',
     question: 'Can I use the generated font outside Flutter?',
     answer: [
-      'Partly, and the boundary is worth stating precisely. Two of the three outputs are framework-neutral: the compiled OpenType/CFF font is a standard .otf file that any OpenType consumer can use, and iconfont.lock.json is a documented JSON registry mapping each source file to its codepoint, which any language can read.',
-      'The third output is not neutral. The generated high-level binding is a Dart file containing const Flutter IconData constants, and the flags that shape it are Dart-specific. There is no generated binding for any other platform.',
-      'So a non-Flutter project can consume the font and read codepoints from the lock file, but it will be writing its own integration layer. GlyphPact does not currently ship a ready-made web, React, Android, or JavaScript integration.',
+      'Partly, and the boundary is worth stating precisely. The compiled OpenType/CFF font, the lock registry, and iconfont.report.json are framework-neutral. Report schema v3 records every emitted glyph name and codepoint plus the font family, file, hashes, layered metadata, and remaining allocation capacity, so it is the stable lower-level input for another language\'s generator.',
+      'The generated high-level binding is Dart-specific: it contains const Flutter IconData values and, when enabled, a name-keyed catalog companion. GlyphPact does not generate a ready-made web, React, Android, or JavaScript binding.',
+      'A non-Flutter project can consume the font and generate its own integration from the report. That custom output must live outside GlyphPact\'s owned output directory and needs its own drift check.',
     ],
     pages: ['home', 'flutter'],
   },
@@ -93,7 +93,7 @@ export const faq: FaqEntry[] = [
     question: 'Does GlyphPact generate CSS or WOFF2?',
     answer: [
       'No. GlyphPact emits an OpenType/CFF .otf font, the lock registry, a machine-readable report, an attribution file, and a Dart provider. It does not produce WOFF, WOFF2, or any stylesheet, and it has no browser integration.',
-      'Using the font on the web is possible but manual: convert the .otf to WOFF2 with a separate tool and write the @font-face rule and class names yourself. Codepoints can be read from the lock file. If a turnkey web icon-font pipeline is what you need, a web-first generator is the better fit today.',
+      'Using the font on the web is possible but manual: convert the .otf to WOFF2 with a separate tool and write the @font-face rule and class names yourself. Active glyph names and codepoints can be read from iconfont.report.json. If a turnkey web icon-font pipeline is what you need, a web-first generator is the better fit today.',
     ],
     pages: ['home'],
   },
@@ -141,11 +141,22 @@ export const faq: FaqEntry[] = [
     pages: ['fluttericon'],
   },
   {
+    id: 'icon-catalog',
+    question: 'Can Flutter code enumerate every generated icon by name?',
+    answer: [
+      'Yes. Set catalog to true in the checked-in GlyphPact config. The existing generated Dart file then includes a separate AppIconsCatalog companion whose static const byName map contains every emitted IconData in ascending codepoint order. Packs with partial-alpha icons also receive layeredByName for their lossless layered descriptors.',
+      'The config switch alone does not enlarge a release. If the catalog is unreachable, Flutter removes it and subsets the font from the individual provider constants the app uses. Reachable byName retains every base glyph, while reachable layeredByName retains those icons\' fallbacks and layer-font glyphs. A catalog referenced only from tests has no release cost.',
+      'For another collection shape, order, variable name, or language, use report schema v3 as a build-time input. Report codepoints are 0x... strings, and codepointsRemaining plus rangeUtilization expose the current allocation headroom. Generated Dart should reference the reported provider constants rather than constructing IconData dynamically, and custom generated files must stay outside GlyphPact\'s owned output directory.',
+    ],
+    more: { label: 'Flutter integration details', href: '/flutter/' },
+    pages: ['home', 'flutter'],
+  },
+  {
     id: 'tree-shaking',
     question: 'Does the generated Flutter code support icon tree shaking?',
     answer: [
-      'The generated provider follows the contract Flutter requires for it. It is emitted as an abstract final class annotated @staticIconProvider, holding only const IconData values whose codepoint, font family, and font package are compile-time constants.',
-      'That annotation exists so Flutter can statically verify no IconData is constructed dynamically, which is the condition its font-subsetting step needs. Whether subsetting actually runs is decided by your build: it applies to release builds and can be disabled with --no-tree-shake-icons. Passing non-constant data to Icon elsewhere in your app is what typically defeats it.',
+      'The generated provider follows the contract Flutter requires for it. It is emitted as an abstract final class annotated @staticIconProvider and has only static const members, including the private font-family strings and IconData values. Partial-alpha packs apply the same annotation to their static-const layered descriptor provider so directly referenced descriptors can be subset independently.',
+      'Whether subsetting runs is decided by the release build and can be disabled with --no-tree-shake-icons. The optional catalog companion has only static const members and carries the provider annotation so declaration-only catalogs in this or another package are ignored. Reachable map values remain visible: an unused catalog is removed, while a reachable byName map retains every base glyph it enumerates.',
     ],
     more: { label: 'Flutter integration details', href: '/flutter/' },
     pages: ['flutter'],
@@ -155,7 +166,7 @@ export const faq: FaqEntry[] = [
     question: 'How many icons can one GlyphPact font hold?',
     answer: [
       'The practical ceiling for a single font is 65,534 usable glyphs, which is an OpenType glyph-indexing limit that GlyphPact enforces as a per-build icon ceiling.',
-      'The allocation range is the tighter constraint in the default configuration. The BMP private use area, U+E000 through U+F8FF, provides 6,400 lifetime slots, and active icons and tombstones both consume them because codepoints are never recycled. For a larger catalogue, start allocation in a supplementary private use area with --start-codepoint 0xF0000, which provides 65,534 slots. Beyond that, split the catalogue into several independently versioned fonts.',
+      'The allocation range is the tighter constraint in the default configuration. The BMP private use area, U+E000 through U+F8FF, provides 6,400 lifetime slots, and active icons and tombstones both consume them because codepoints are never recycled. Report schema v3 exposes codepointsRemaining and rangeUtilization, and builds warn at 80% utilization. For a larger catalogue, start a new stable font in a supplementary private use area with --start-codepoint 0xF0000, which provides 65,534 slots. Never change the start codepoint of an established lock; beyond one range, split the catalogue into independently versioned fonts.',
     ],
     pages: ['flutter'],
   },

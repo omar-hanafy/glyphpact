@@ -119,6 +119,8 @@ only codepoint authority. No artifact is published until every source is either
 emitted or explicitly skipped, all hard checks pass, and the final font
 validates. An all-skipped batch cannot publish an empty font.
 
-Successful result and report payloads use schema version 2. The lock remains
-schema version 1 because it records ABI allocation rather than the policy used
-for a particular build.
+Successful CLI result payloads use schema version 2, reports use schema version
+3, and the lock remains schema version 1 because it records ABI allocation
+rather than the policy used for a particular build. Report v3 adds remaining
+codepoint capacity and allocation-window utilization without changing the
+closed v1 or v2 report contracts.

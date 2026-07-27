@@ -3,10 +3,337 @@
   "$id": "https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/schema/icon-font-report.schema.json",
   "title": "GlyphPact deterministic build report",
   "oneOf": [
+    { "$ref": "#/$defs/reportV3" },
     { "$ref": "#/$defs/reportV2" },
     { "$ref": "#/$defs/reportV1" }
   ],
   "$defs": {
+    "reportV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "codepointsRemaining",
+        "rangeUtilization",
+        "generator",
+        "generatorVersion",
+        "status",
+        "quality",
+        "policy",
+        "discoveredIconCount",
+        "glyphCount",
+        "losslessGlyphCount",
+        "approximatedGlyphCount",
+        "skippedIconCount",
+        "issueCount",
+        "issues",
+        "retiredCodepointCount",
+        "textFonts",
+        "font",
+        "layerFonts",
+        "dart",
+        "lockFile",
+        "attributionFile",
+        "glyphs",
+        "skippedIcons"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 3 },
+        "generator": { "const": "glyphpact" },
+        "generatorVersion": { "type": "string", "minLength": 1 },
+        "status": { "const": "success" },
+        "quality": { "enum": ["lossless", "approximated", "partial"] },
+        "policy": { "$ref": "#/$defs/policy" },
+        "discoveredIconCount": { "type": "integer", "minimum": 1, "maximum": 65534 },
+        "glyphCount": { "type": "integer", "minimum": 1, "maximum": 65534 },
+        "losslessGlyphCount": { "type": "integer", "minimum": 0, "maximum": 65534 },
+        "approximatedGlyphCount": { "type": "integer", "minimum": 0, "maximum": 65534 },
+        "skippedIconCount": { "type": "integer", "minimum": 0, "maximum": 65534 },
+        "issueCount": { "type": "integer", "minimum": 0 },
+        "issues": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/lossyIssue" },
+              { "$ref": "#/$defs/skippedIssue" }
+            ]
+          }
+        },
+        "retiredCodepointCount": { "type": "integer", "minimum": 0 },
+        "codepointsRemaining": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65534,
+          "description": "Unallocated codepoints remaining from the configured startCodepoint through the end of its private-use range."
+        },
+        "rangeUtilization": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Fraction of the configured private-use allocation window consumed by active and retired assignments."
+        },
+        "textFonts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/textFont" },
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "font": { "$ref": "#/$defs/font" },
+        "layerFonts": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/layerFont" }
+        },
+        "dart": { "$ref": "#/$defs/dart" },
+        "lockFile": { "type": "string", "minLength": 1 },
+        "attributionFile": { "const": "ATTRIBUTION.md" },
+        "glyphs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 65534,
+          "items": { "$ref": "#/$defs/glyphV2" }
+        },
+        "skippedIcons": {
+          "type": "array",
+          "maxItems": 65534,
+          "items": { "$ref": "#/$defs/skippedIcon" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "quality": { "const": "lossless" } },
+            "required": ["quality"]
+          },
+          "then": {
+            "properties": {
+              "losslessGlyphCount": { "minimum": 1 },
+              "approximatedGlyphCount": { "const": 0 },
+              "skippedIconCount": { "const": 0 },
+              "issueCount": { "const": 0 },
+              "issues": { "maxItems": 0 },
+              "glyphs": {
+                "items": {
+                  "properties": { "conversion": { "const": "lossless" } },
+                  "required": ["conversion"]
+                }
+              },
+              "skippedIcons": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "quality": { "const": "approximated" } },
+            "required": ["quality"]
+          },
+          "then": {
+            "properties": {
+              "approximatedGlyphCount": { "minimum": 1 },
+              "skippedIconCount": { "const": 0 },
+              "issueCount": { "minimum": 1 },
+              "issues": {
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/lossyIssue" }
+              },
+              "glyphs": {
+                "contains": {
+                  "properties": { "conversion": { "const": "approximated" } },
+                  "required": ["conversion"]
+                }
+              },
+              "skippedIcons": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "quality": { "const": "partial" } },
+            "required": ["quality"]
+          },
+          "then": {
+            "properties": {
+              "skippedIconCount": { "minimum": 1 },
+              "issueCount": { "minimum": 1 },
+              "issues": {
+                "minItems": 1,
+                "contains": { "$ref": "#/$defs/skippedIssue" }
+              },
+              "skippedIcons": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "policy": {
+                "properties": { "lossy": { "const": "error" } },
+                "required": ["lossy"]
+              }
+            },
+            "required": ["policy"]
+          },
+          "then": {
+            "properties": {
+              "issues": {
+                "items": {
+                  "anyOf": [
+                    { "$ref": "#/$defs/scopedLayeredFallbackIssue" },
+                    { "$ref": "#/$defs/skippedIssue" }
+                  ]
+                }
+              },
+              "glyphs": {
+                "items": {
+                  "if": {
+                    "properties": { "conversion": { "const": "approximated" } },
+                    "required": ["conversion"]
+                  },
+                  "then": {
+                    "required": ["layeredRendering"],
+                    "properties": {
+                      "issues": {
+                        "items": { "$ref": "#/$defs/scopedLayeredFallbackIssue" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "policy": {
+                "properties": { "unrepresentable": { "const": "error" } },
+                "required": ["unrepresentable"]
+              }
+            },
+            "required": ["policy"]
+          },
+          "then": {
+            "properties": {
+              "skippedIconCount": { "const": 0 },
+              "issues": {
+                "not": { "contains": { "$ref": "#/$defs/skippedIssue" } }
+              },
+              "skippedIcons": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "losslessGlyphCount": { "const": 0 } },
+            "required": ["losslessGlyphCount"]
+          },
+          "then": {
+            "properties": {
+              "glyphs": {
+                "not": {
+                  "contains": {
+                    "properties": { "conversion": { "const": "lossless" } },
+                    "required": ["conversion"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "losslessGlyphCount": { "minimum": 1 } },
+            "required": ["losslessGlyphCount"]
+          },
+          "then": {
+            "properties": {
+              "glyphs": {
+                "contains": {
+                  "properties": { "conversion": { "const": "lossless" } },
+                  "required": ["conversion"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "approximatedGlyphCount": { "const": 0 } },
+            "required": ["approximatedGlyphCount"]
+          },
+          "then": {
+            "properties": {
+              "issues": {
+                "not": { "contains": { "$ref": "#/$defs/lossyIssue" } }
+              },
+              "glyphs": {
+                "items": {
+                  "properties": { "conversion": { "const": "lossless" } },
+                  "required": ["conversion"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "approximatedGlyphCount": { "minimum": 1 } },
+            "required": ["approximatedGlyphCount"]
+          },
+          "then": {
+            "properties": {
+              "issues": { "contains": { "$ref": "#/$defs/lossyIssue" } },
+              "glyphs": {
+                "contains": {
+                  "properties": { "conversion": { "const": "approximated" } },
+                  "required": ["conversion"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "skippedIconCount": { "const": 0 } },
+            "required": ["skippedIconCount"]
+          },
+          "then": {
+            "properties": {
+              "issues": {
+                "not": { "contains": { "$ref": "#/$defs/skippedIssue" } }
+              },
+              "skippedIcons": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "skippedIconCount": { "minimum": 1 } },
+            "required": ["skippedIconCount"]
+          },
+          "then": {
+            "properties": {
+              "issues": { "contains": { "$ref": "#/$defs/skippedIssue" } },
+              "skippedIcons": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "issueCount": { "const": 0 } },
+            "required": ["issueCount"]
+          },
+          "then": { "properties": { "issues": { "maxItems": 0 } } }
+        },
+        {
+          "if": {
+            "properties": { "issueCount": { "minimum": 1 } },
+            "required": ["issueCount"]
+          },
+          "then": { "properties": { "issues": { "minItems": 1 } } }
+        }
+      ]
+    },
     "reportV2": {
       "type": "object",
       "additionalProperties": false,

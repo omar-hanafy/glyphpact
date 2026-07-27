@@ -995,7 +995,7 @@ def test_codepoint_allocator_advances_monotonically_in_linear_membership_checks(
     occupied = 5_000
     allocations = 1_000
     used = _CountingSet(range(start, start + occupied))
-    allocator = _CodepointAllocator(used, start)
+    allocator = _CodepointAllocator(used, start, established=False)
 
     assigned = [allocator.allocate() for _ in range(allocations)]
 

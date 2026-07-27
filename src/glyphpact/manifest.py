@@ -236,7 +236,11 @@ def _validate_unique(glyphs: Iterable[LockGlyph]) -> None:
         codepoints[glyph.codepoint] = glyph
 
 
-def load_lock(path: Path) -> LockState:
+def load_lock(
+    path: Path,
+    *,
+    expected_start_codepoint: int | None = None,
+) -> LockState:
     if path.is_symlink():
         raise IconFontError(
             "LOCK_SYMLINK_FORBIDDEN",
@@ -291,7 +295,21 @@ def load_lock(path: Path) -> LockState:
         )
     if isinstance(raw["fontPackage"], str):
         validate_text(raw["fontPackage"], "fontPackage", source=str(path))
-    _parse_codepoint(raw["startCodepoint"], str(path))
+    start_codepoint = _parse_codepoint(raw["startCodepoint"], str(path))
+    if expected_start_codepoint is not None and start_codepoint != expected_start_codepoint:
+        raise IconFontError(
+            "LOCK_START_CODEPOINT_MISMATCH",
+            (
+                f"The lock startCodepoint {format_codepoint(start_codepoint)} does not "
+                "match the configured "
+                f"{format_codepoint(expected_start_codepoint)}."
+            ),
+            source=str(path),
+            hint=(
+                "Restore the established startCodepoint. To use another range, create a "
+                "new font family, output directory, and lock."
+            ),
+        )
     if (
         isinstance(raw["unitsPerEm"], bool)
         or not isinstance(raw["unitsPerEm"], int)
@@ -309,13 +327,28 @@ def load_lock(path: Path) -> LockState:
     active = tuple(_parse_glyph(value, path) for value in active_raw)
     retired = tuple(_parse_glyph(value, path) for value in retired_raw)
     _validate_unique((*active, *retired))
+    bounds = private_use_range(start_codepoint)
+    assert bounds is not None
+    for glyph in (*active, *retired):
+        if not start_codepoint <= glyph.codepoint <= bounds[1]:
+            raise IconFontError(
+                "LOCK_CODEPOINT_RANGE_MISMATCH",
+                (
+                    f"{glyph.source!r} uses {format_codepoint(glyph.codepoint)}, outside "
+                    f"the lock allocation window {format_codepoint(start_codepoint)} "
+                    f"through {format_codepoint(bounds[1])}."
+                ),
+                source=str(path),
+                hint="Restore the committed lock file. Do not mix private-use ranges.",
+            )
     return LockState(active=active, retired=retired)
 
 
 class _CodepointAllocator:
-    def __init__(self, used: set[int], start: int) -> None:
+    def __init__(self, used: set[int], start: int, *, established: bool) -> None:
         self._used = used
         self._next = start
+        self._established = established
         bounds = private_use_range(start)
         assert bounds is not None
         self._end = bounds[1]
@@ -327,7 +360,17 @@ class _CodepointAllocator:
             raise IconFontError(
                 "CODEPOINT_RANGE_EXHAUSTED",
                 f"No private-use codepoint remains through U+{self._end:04X}.",
-                hint="Move startCodepoint to U+F0000 to use a supplementary private-use plane.",
+                hint=(
+                    (
+                        "Create another stable font family, output directory, and lock "
+                        "before adding more icons. Never recycle retired codepoints."
+                    )
+                    if self._established
+                    else (
+                        "Choose a supplementary private-use startCodepoint such as "
+                        "U+F0000 before publishing this new pack."
+                    )
+                ),
             )
         result = self._next
         self._used.add(result)
@@ -355,7 +398,11 @@ def assign_glyphs(
         if glyph.source not in current_sources:
             retired_rename_candidates.setdefault(glyph.source_sha256, []).append(glyph)
     used = {glyph.codepoint for glyph in (*previous.active, *previous.retired)}
-    allocator = _CodepointAllocator(used, config.start_codepoint)
+    allocator = _CodepointAllocator(
+        used,
+        config.start_codepoint,
+        established=bool(previous.active or previous.retired),
+    )
     active: list[LockGlyph] = []
     active_sources: set[str] = set()
     renamed_from: set[str] = set()

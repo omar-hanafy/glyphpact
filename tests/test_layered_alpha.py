@@ -258,12 +258,83 @@ def test_generated_layered_dart_qualifies_flutter_types_for_shadowing_class_name
     dart = result.dart_path.read_text(encoding="utf-8")
     assert "import 'package:flutter/widgets.dart' as flutter;" in dart
     assert "abstract final class Icon {" in dart
-    assert "@flutter.staticIconProvider" in dart
+    assert dart.count("@flutter.staticIconProvider") == 2
+    assert "@flutter.staticIconProvider\nabstract final class IconLayers {" in dart
+    assert "// dart format off" not in dart
+    assert "// dart format on" not in dart
     assert "static const flutter.IconData icon = flutter.IconData(" in dart
     assert "class IconLayeredIcon extends flutter.StatelessWidget" in dart
     assert "flutter.Widget build(flutter.BuildContext context)" in dart
     assert "flutter.Opacity(" in dart
     assert "child: flutter.Icon(" in dart
+
+
+def test_wrapped_package_layer_provider_is_legacy_formatter_canonical(
+    tmp_path: Path,
+) -> None:
+    inputs = tmp_path / "icons"
+    write_svg(inputs, "layered.svg", LAYERED_SVG)
+    config = BuildConfig(
+        input_path=inputs,
+        output_dir=tmp_path / "generated",
+        font_family="Package Smoke Icons",
+        class_name="PackageSmokeIcons",
+        font_package="icon_font_fixture",
+        catalog=True,
+        icons={
+            "layered.svg": IconOverride(
+                partial_alpha=PartialAlphaConfig(),
+            )
+        },
+        jobs=1,
+    ).validated()
+
+    result = build(config)
+
+    dart = result.dart_path.read_text(encoding="utf-8")
+    provider = (
+        "// dart format off\n"
+        "\n"
+        "/// Layered icon descriptors for SVGs that opted into partial-alpha preservation.\n"
+        "///\n"
+        "/// This static-const provider lets Flutter subset unreferenced descriptors.\n"
+        "@flutter.staticIconProvider\n"
+        "abstract final class PackageSmokeIconsLayers {\n"
+        "  /// Lossless ordered layers for [PackageSmokeIcons.layered].\n"
+        "  static const PackageSmokeIconsLayeredData layered =\n"
+        "      PackageSmokeIconsLayeredData(\n"
+        "    fallback: PackageSmokeIcons.layered,\n"
+        "    layers: <PackageSmokeIconsLayer>[\n"
+        "      PackageSmokeIconsLayer(\n"
+        "        icon: flutter.IconData(\n"
+        "          0xE000,\n"
+        "          fontFamily: 'Package Smoke Icons Layer 1',\n"
+        "          fontPackage: 'icon_font_fixture',\n"
+        "        ),\n"
+        "        opacity: 0.4,\n"
+        "      ),\n"
+        "      PackageSmokeIconsLayer(\n"
+        "        icon: flutter.IconData(\n"
+        "          0xE000,\n"
+        "          fontFamily: 'Package Smoke Icons Layer 2',\n"
+        "          fontPackage: 'icon_font_fixture',\n"
+        "        ),\n"
+        "        opacity: 1.0,\n"
+        "      ),\n"
+        "    ],\n"
+        "  );\n"
+        "}\n"
+        "\n"
+        "// dart format on\n"
+    )
+    assert provider in dart
+    assert dart.index("final class PackageSmokeIconsLayeredData {") < dart.index(provider)
+    assert dart.index(provider) < dart.index(
+        "class PackageSmokeIconsLayeredIcon extends flutter.StatelessWidget"
+    )
+    assert dart.count("// dart format off") == 2
+    assert dart.count("// dart format on") == 2
+    assert build(config, check=True).checked
 
 
 def test_layered_build_failure_publishes_no_partial_output(tmp_path: Path) -> None:
@@ -285,3 +356,109 @@ def test_layered_build_failure_publishes_no_partial_output(tmp_path: Path) -> No
         "SVG_LAYERED_ALPHA_PAINT_UNREPRESENTABLE"
     ]
     assert not output.exists()
+
+
+def test_catalog_separates_layered_descriptors_from_plain_icons(tmp_path: Path) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "layered.svg", LAYERED_SVG)
+    write_svg(
+        inputs,
+        "plain.svg",
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+        '<path d="M2 2h20v20H2z"/>'
+        "</svg>",
+    )
+    config = BuildConfig(
+        input_path=inputs,
+        output_dir=output,
+        font_family="Layer Test",
+        class_name="LayerTest",
+        catalog=True,
+        policy=ConversionPolicy(lossy=LossyPolicy.CONVERT),
+        icons={
+            "layered.svg": IconOverride(
+                partial_alpha=PartialAlphaConfig(
+                    fallback=PartialAlphaFallback.OPAQUE_ONLY,
+                )
+            )
+        },
+        jobs=1,
+    ).validated()
+
+    result = build(config)
+
+    dart = result.dart_path.read_text(encoding="utf-8")
+    catalog = dart.split("abstract final class LayerTestCatalog {", 1)[1]
+    assert "static const Map<String, flutter.IconData> byName" in catalog
+    assert "'layered': LayerTest.layered," in catalog
+    assert "'plain': LayerTest.plain," in catalog
+    assert "static const Map<String, LayerTestLayeredData> layeredByName" in catalog
+    assert "'layered': LayerTestLayers.layered," in catalog
+    assert "'plain': LayerTestLayers.plain," not in catalog
+    assert "Retaining or enumerating this map keeps every listed fallback and" in catalog
+    assert "layer glyph, but does not keep unrelated plain icons." in catalog
+    assert catalog.count("Keep the literal expanded for Dart 3.0-3.6 formatters.") == 2
+    assert "@flutter.staticIconProvider\nabstract final class LayerTestCatalog {" in dart
+    assert dart.count("@flutter.staticIconProvider") == 3
+    assert build(config, check=True).checked
+
+
+def test_first_and_last_layered_icon_toggle_conditional_catalog_api(tmp_path: Path) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(
+        inputs,
+        "plain.svg",
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+        '<path d="M2 2h20v20H2z"/>'
+        "</svg>",
+    )
+    plain_config = BuildConfig(
+        input_path=inputs,
+        output_dir=output,
+        font_family="Layer Test",
+        class_name="LayerTest",
+        catalog=True,
+        jobs=1,
+    ).validated()
+
+    plain = build(plain_config)
+    plain_dart = plain.dart_path.read_text(encoding="utf-8")
+    assert "LayerTestLayeredData" not in plain_dart
+    assert "LayerTestLayers" not in plain_dart
+    assert "layeredByName" not in plain_dart
+    assert build(plain_config, check=True).checked
+
+    write_svg(inputs, "layered.svg", LAYERED_SVG)
+    layered_config = BuildConfig(
+        input_path=inputs,
+        output_dir=output,
+        font_family="Layer Test",
+        class_name="LayerTest",
+        catalog=True,
+        icons={
+            "layered.svg": IconOverride(
+                partial_alpha=PartialAlphaConfig(),
+            )
+        },
+        jobs=1,
+    ).validated()
+    layered = build(layered_config)
+    layered_dart = layered.dart_path.read_text(encoding="utf-8")
+    assert "final class LayerTestLayeredData" in layered_dart
+    assert "abstract final class LayerTestLayers" in layered_dart
+    assert "static const Map<String, LayerTestLayeredData> layeredByName" in layered_dart
+    assert "'layered': LayerTestLayers.layered," in layered_dart
+    assert build(layered_config, check=True).checked
+
+    (inputs / "layered.svg").unlink()
+    removed = build(plain_config)
+    removed_dart = removed.dart_path.read_text(encoding="utf-8")
+    assert "LayerTestLayeredData" not in removed_dart
+    assert "LayerTestLayers" not in removed_dart
+    assert "layeredByName" not in removed_dart
+    assert "'plain': LayerTest.plain," in removed_dart
+    retired = json.loads(removed.lock_path.read_text(encoding="utf-8"))["retired"]
+    assert [glyph["source"] for glyph in retired] == ["layered.svg"]
+    assert build(plain_config, check=True).checked

@@ -256,8 +256,8 @@ export const dimensions: Dimension[] = [
     cells: {
       glyphpact: {
         support: 'yes',
-        value: 'Const class, tree-shakeable',
-        note: 'Emits a `@staticIconProvider` class of `const IconData` values, with `fontPackage` handling and optional layered-icon widgets.',
+        value: 'Const provider plus optional catalog',
+        note: 'Emits a tree-shakeable `@staticIconProvider` class, optional same-file name-keyed enumeration, `fontPackage` handling, and layered-icon widgets.',
       },
       icomoon: {
         support: 'no',

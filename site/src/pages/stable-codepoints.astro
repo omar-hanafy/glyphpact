@@ -254,6 +254,13 @@ const ciYaml = `- name: Verify generated icon output is current
           <code>{capacity.supplementaryFlag}</code>, which provides
           {' '}{capacity.supplementarySlots} slots.
         </p>
+        <p class="gp-note">
+          Report schema v3 tracks <code>{capacity.remainingField}</code> and
+          <code>{capacity.utilizationField}</code>. At
+          {' '}{capacity.warningThreshold} utilization, GlyphPact emits
+          <code>CODEPOINT_RANGE_NEAR_EXHAUSTION</code> so the next stable shard
+          can be planned before the current allocation window is full.
+        </p>
       </div>
     </section>
 

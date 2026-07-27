@@ -344,3 +344,80 @@ def test_config_rejects_pinned_text_fonts_in_generated_output(
         ).validated()
 
     assert caught.value.diagnostic.code == "TEXT_FONT_OUTPUT_CONFLICT"
+
+
+def test_config_loads_optional_catalog(tmp_path) -> None:
+    config_path = tmp_path / "icon_font.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "input": "icons",
+                "output": "generated",
+                "className": "ProductIcons",
+                "catalog": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_config(config_path)
+
+    assert config.catalog
+
+
+def test_config_catalog_defaults_to_disabled(tmp_path) -> None:
+    config_path = tmp_path / "icon_font.json"
+    config_path.write_text(
+        json.dumps({"input": "icons", "output": "generated"}),
+        encoding="utf-8",
+    )
+
+    assert not load_config(config_path).catalog
+
+
+@pytest.mark.parametrize("value", [None, 0, 1, "true", {}, []])
+def test_config_catalog_requires_boolean(tmp_path, value) -> None:
+    config_path = tmp_path / "icon_font.json"
+    config_path.write_text(
+        json.dumps({"input": "icons", "output": "generated", "catalog": value}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(IconFontError) as caught:
+        load_config(config_path)
+
+    assert caught.value.diagnostic.code == "CONFIG_TYPE_INVALID"
+    assert caught.value.diagnostic.message == "catalog must be boolean."
+
+
+def test_programmatic_catalog_requires_boolean(tmp_path) -> None:
+    with pytest.raises(IconFontError) as caught:
+        BuildConfig(
+            input_path=tmp_path / "icons",
+            output_dir=tmp_path / "generated",
+            catalog=1,  # type: ignore[arg-type]
+        ).validated()
+
+    assert caught.value.diagnostic.code == "CONFIG_TYPE_INVALID"
+    assert caught.value.diagnostic.message == "catalog must be boolean."
+
+
+def test_discarded_catalog_file_key_remains_unknown(tmp_path) -> None:
+    config_path = tmp_path / "icon_font.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "input": "icons",
+                "output": "generated",
+                "catalogFile": "icons.catalog.dart",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(IconFontError) as caught:
+        load_config(config_path)
+
+    assert caught.value.diagnostic.code == "CONFIG_KEY_UNKNOWN"
+    assert caught.value.diagnostic.message == "Unknown config key(s): catalogFile."
+    assert caught.value.diagnostic.source == str(config_path)

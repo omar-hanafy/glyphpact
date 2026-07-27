@@ -8,6 +8,9 @@ on:
       - "brand/**"
       - ".github/workflows/pages.yml"
   pull_request:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +24,8 @@ jobs:
   build:
     name: Build and verify
     runs-on: ubuntu-latest
+    outputs:
+      deployable: ${{ steps.release.outputs.deployable }}
     permissions:
       contents: read
       pages: read
@@ -33,6 +38,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # A completed release runs this workflow in the main-branch security
+          # context while the site itself must come from the released commit.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
           # Full history so scripts/check-claims.mjs can assert that the version
           # the site advertises corresponds to a real release tag. A shallow
           # checkout carries no tags and the assertion would silently skip.
@@ -61,6 +69,10 @@ jobs:
 
       - name: Check for unsupported product claims
         run: npm run check:claims
+        env:
+          # Branch builds may verify source-aligned upcoming content, but the
+          # completed-release path must validate the real matching tag.
+          GLYPHPACT_ALLOW_UNRELEASED_SITE_VERSION: ${{ github.event_name == 'workflow_run' && '0' || '1' }}
 
       - name: Check links, metadata, structured data, and sitemap
         run: npm run check:links
@@ -68,21 +80,60 @@ jobs:
       - name: Check responsive layout and accessibility
         run: npm run test:browser
 
+      - name: Check whether the advertised release can deploy
+        id: release
+        shell: bash
+        env:
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}
+          WORKFLOW_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          VERSION="$(node -e "const fs=require('fs');const s=fs.readFileSync('src/site.config.ts','utf8');process.stdout.write(s.match(/version:\\s*'([^']+)'/)[1])")"
+          TAG="v${VERSION}"
+          TAG_SHA="$(git rev-list -n 1 "refs/tags/${TAG}" 2>/dev/null || true)"
+          PYPI_URL="https://pypi.org/pypi/glyphpact/${VERSION}/json"
+          deployable=false
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_run" ]; then
+            if [ "${WORKFLOW_CONCLUSION}" = "success" ] &&
+               [ "${WORKFLOW_EVENT}" = "push" ] &&
+               [ "${WORKFLOW_HEAD_REPOSITORY}" = "${GITHUB_REPOSITORY}" ] &&
+               [ -n "${WORKFLOW_HEAD_SHA}" ] &&
+               [ "${TAG_SHA}" = "${WORKFLOW_HEAD_SHA}" ] &&
+               curl --fail --silent --show-error --location \
+                 "${PYPI_URL}" --output /dev/null; then
+              deployable=true
+            fi
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ] &&
+               [ "${GITHUB_REF}" = "refs/heads/main" ] &&
+               [ -n "${TAG_SHA}" ] &&
+               curl --fail --silent --show-error --location \
+                 "${PYPI_URL}" --output /dev/null; then
+            deployable=true
+          fi
+
+          if [ "${deployable}" = "true" ]; then
+            echo "deployable=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "deployable=false" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Configure Pages
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: steps.release.outputs.deployable == 'true'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: steps.release.outputs.deployable == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site/dist
 
   deploy:
     name: Deploy to GitHub Pages
-    # Pull requests and manual dispatches from non-main branches build and
-    # verify, but never publish.
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # Branch previews only verify. Main may deploy an advertised version after
+    # both its matching tag and exact PyPI release exist.
+    if: needs.build.outputs.deployable == 'true'
     needs: build
     runs-on: ubuntu-latest
     concurrency:

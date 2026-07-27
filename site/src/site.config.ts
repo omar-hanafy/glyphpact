@@ -8,8 +8,10 @@
  *    goes through `absolute()`.
  * 2. Every product claim on the site traces to something in this repository.
  *    `RELEASE.version` is asserted against a real git tag by
- *    `scripts/check-claims.mjs`, so the site cannot advertise a release that
- *    was never published.
+ *    `scripts/check-claims.mjs`. The deployment workflow additionally requires
+ *    a successful Release run, the exact released SHA, and the matching PyPI
+ *    version. Source previews may use the matching source/changelog version
+ *    before its tag exists.
  */
 
 /** Configured in astro.config.mjs; Astro exposes it here. */
@@ -19,17 +21,18 @@ const ORIGIN = import.meta.env.SITE ?? 'https://omar-hanafy.github.io';
 const BASE = import.meta.env.BASE_URL ?? '/';
 
 /**
- * The current published release.
+ * The release represented by this source snapshot.
  *
  * Deliberately explicit rather than read from src/glyphpact/version.py: the
- * source tree can carry an unreleased version bump, and the site must only
- * ever advertise a release that exists. check:claims fails the build if this
- * value has no matching `v<version>` git tag.
+ * source tree can carry an unreleased version bump. Production check:claims
+ * fails if this value has no matching `v<version>` git tag, while deployment
+ * also requires the successful package release. Source previews require it to
+ * match pyproject.toml and a dated changelog entry.
  */
 export const RELEASE = {
-  version: '1.0.1',
+  version: '1.1.0',
   /** Verified by direct inspection of this repository on this date. */
-  verifiedOn: '2026-07-25',
+  verifiedOn: '2026-07-27',
 } as const;
 
 const REPO = 'https://github.com/omar-hanafy/glyphpact';

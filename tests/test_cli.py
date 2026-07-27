@@ -53,6 +53,9 @@ def test_cli_json_build_and_check(tmp_path, simple_svg: str, capsys) -> None:
     assert payload["skippedIconCount"] == 0
     assert payload["issueCount"] == 0
     assert payload["issues"] == []
+    assert "abstract final class CliIconsCatalog {" not in (output / "cli_icons.dart").read_text(
+        encoding="utf-8"
+    )
 
     assert (
         main(
@@ -69,6 +72,112 @@ def test_cli_json_build_and_check(tmp_path, simple_svg: str, capsys) -> None:
         == 0
     )
     assert json.loads(capsys.readouterr().out)["mode"] == "check"
+
+
+def test_cli_warns_at_exact_range_threshold_without_changing_json(
+    tmp_path,
+    simple_svg: str,
+    capsys,
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    for index in range(4):
+        write_svg(
+            inputs,
+            f"icon_{index}.svg",
+            simple_svg.replace("<path", f"<!-- icon {index} --><path"),
+        )
+    common = [
+        str(inputs),
+        "--output",
+        str(output),
+        "--name",
+        "CliIcons",
+        "--start-codepoint",
+        "0xF8FB",
+    ]
+
+    assert main([*common, "--json"]) == 0
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert payload["schemaVersion"] == 2
+    assert "warnings" not in payload
+    assert "CODEPOINT_RANGE_NEAR_EXHAUSTION" in captured.err
+    assert (
+        "4 of 5 codepoints in the configured private-use allocation window are "
+        "consumed (80.0000%); 1 codepoint remains"
+    ) in captured.err
+
+    assert main(common) == 0
+    captured = capsys.readouterr()
+    assert "Built 4 of 4 discovered icon(s)" in captured.out
+    assert captured.err.count("CODEPOINT_RANGE_NEAR_EXHAUSTION") == 1
+
+    assert main([*common, "--check", "--quiet"]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "CODEPOINT_RANGE_NEAR_EXHAUSTION" in captured.err
+
+    for index in range(4, 6):
+        write_svg(
+            inputs,
+            f"icon_{index}.svg",
+            simple_svg.replace("<path", f"<!-- icon {index} --><path"),
+        )
+    assert main(common) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "CODEPOINT_RANGE_EXHAUSTED" in captured.err
+
+
+def test_cli_catalog_flags_control_same_file_catalog(tmp_path, simple_svg: str, capsys) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "home.svg", simple_svg)
+    common = [str(inputs), "--output", str(output), "--name", "CliIcons", "--json"]
+
+    assert main([*common, "--catalog"]) == 0
+    capsys.readouterr()
+    dart = (output / "cli_icons.dart").read_text(encoding="utf-8")
+    assert "abstract final class CliIconsCatalog {" in dart
+
+    assert main([*common, "--catalog", "--check"]) == 0
+    capsys.readouterr()
+    assert main([*common, "--no-catalog", "--check"]) == 3
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["errors"][0]["code"] == "OUTPUT_OUT_OF_DATE"
+    assert payload["errors"][0]["details"]["changed"] == ["cli_icons.dart"]
+
+
+def test_cli_catalog_flag_overrides_checked_in_config(tmp_path, simple_svg: str, capsys) -> None:
+    inputs = tmp_path / "icons"
+    write_svg(inputs, "home.svg", simple_svg)
+    config_path = tmp_path / "icon_font.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "input": "icons",
+                "output": "generated",
+                "fontFamily": "CliIcons",
+                "catalog": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["--config", str(config_path), "--json"]) == 0
+    capsys.readouterr()
+    dart_path = tmp_path / "generated" / "cli_icons.dart"
+    assert "abstract final class CliIconsCatalog {" in dart_path.read_text(encoding="utf-8")
+    assert main(["--config", str(config_path), "--check", "--json"]) == 0
+    capsys.readouterr()
+
+    assert main(["--config", str(config_path), "--no-catalog", "--json"]) == 0
+    capsys.readouterr()
+    dart = dart_path.read_text(encoding="utf-8")
+    assert "abstract final class CliIconsCatalog {" not in dart
+    assert main(["--config", str(config_path), "--no-catalog", "--check", "--json"]) == 0
+    capsys.readouterr()
 
 
 def test_cli_json_v2_reports_approved_lossy_and_skipped_outcomes(

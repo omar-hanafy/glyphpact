@@ -312,7 +312,7 @@ export const mcpToolDocs: McpToolDoc[] = [
     inputs:
       'An absolute report_path, optional lossy or unrepresentable classification, and an offset and limit up to 500.',
     returns:
-      'A report summary plus independently bounded pages for issues, glyphs, and skipped icons.',
+      'A report summary including remaining codepoints and range utilization, plus independently bounded pages for issues, glyphs, and skipped icons.',
   },
 ];
 
