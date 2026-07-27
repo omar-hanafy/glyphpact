@@ -71,6 +71,8 @@ export const site = {
     benchmarking: repoFile('docs/benchmarking.md'),
     pluginGuide: repoFile('plugins/glyphpact/README.md'),
     examples: repoTree('examples'),
+    flutterIconComparison:
+      `${REPO}/tree/main/examples/fluttericon-evenodd-comparison`,
     layeredExample: repoFile('examples/layered_icon_font.json'),
     lockSchema: repoFile('schema/icon-font-lock.schema.json'),
     configSchema: repoFile('schema/icon-font-config.schema.json'),
@@ -108,6 +110,7 @@ export function absolute(p = '/'): string {
 
 export type RouteKey =
   | 'home'
+  | 'bulk'
   | 'flutter'
   | 'mcp'
   | 'codepoints'
@@ -135,54 +138,63 @@ export const routes: Record<RouteKey, {
   home: {
     href: '/',
     nav: 'Overview',
-    title: 'GlyphPact - deterministic SVG-to-icon-font compiler',
+    title: 'GlyphPact: local SVG-to-Flutter icon font compiler',
     description:
-      'GlyphPact compiles a directory of SVG files into a validated OpenType icon font, a committed codepoint registry, and a const Flutter IconData API. Existing codepoints stay fixed when the pack changes.',
+      'Compile SVG folders into validated icon fonts and const Flutter IconData with stable codepoints, explicit diagnostics, reproducible builds, CI, and MCP.',
     short: 'Overview',
     inNav: false,
+  },
+  bulk: {
+    href: '/bulk-svg-to-flutter-icons/',
+    nav: 'Bulk SVG',
+    title: 'Bulk SVG to Flutter icons with a local CLI',
+    description:
+      'Compile SVG folders recursively into an OpenType icon font and const Flutter IconData. Keep codepoints stable, audit SVGs, and verify generated output in CI.',
+    short: 'bulk SVG guide',
+    inNav: true,
   },
   codepoints: {
     href: '/stable-codepoints/',
     nav: 'Stable codepoints',
-    title: 'Why icon-font codepoints change, and how to stop it',
+    title: 'Add Flutter icons without changing existing codepoints',
     description:
-      'Icon-font codepoints shift because most generators assign them from the current file list. A committed codepoint registry makes assignments permanent, so an existing IconData never renders a different glyph.',
+      'Add new SVGs to a Flutter icon font without renumbering existing IconData. See how a committed lock handles growth from 3 icons to 5, 10, and 100.',
     short: 'stable codepoints',
     inNav: true,
   },
   flutter: {
     href: '/flutter/',
     nav: 'Flutter',
-    title: 'Flutter icon font generator with stable IconData codepoints',
+    title: 'Use a custom icon font in Flutter: pubspec, IconData, and CI',
     description:
-      'Compile SVG files into an OpenType font and a tree-shakeable const Flutter IconData class. Covers pubspec registration, font packages, layered icons, semantics, and CI staleness checks.',
+      'Wire a generated OpenType icon font into Flutter with pubspec.yaml, const IconData, semantics, packages, tree shaking, and CI staleness checks.',
     short: 'Flutter integration',
     inNav: true,
   },
   mcp: {
     href: '/mcp/',
     nav: 'MCP',
-    title: 'Install and use the GlyphPact MCP server',
+    title: 'GlyphPact MCP server for SVG-to-Flutter icon automation',
     description:
-      'Install GlyphPact MCP in Claude Code, Codex, Antigravity, Cursor, JetBrains, VS Code, Zed, Windsurf, Gemini CLI, and other local stdio clients. Includes setup, tools, prompts, workflow, and safety boundaries.',
+      'Use GlyphPact from Codex, Claude Code, Cursor, and other MCP clients to audit SVG packs, build Flutter icon fonts, and check generated output locally.',
     short: 'MCP integration',
     inNav: true,
   },
   vsIcomoon: {
     href: '/vs/icomoon/',
     nav: 'vs IcoMoon',
-    title: 'GlyphPact vs IcoMoon: a fair comparison',
+    title: 'IcoMoon alternative for repository-managed Flutter icons',
     description:
-      'IcoMoon is a browser icon-font app that keeps codepoints when you re-import selection.json. GlyphPact is a CLI compiler that keeps them in a committed lock file a CI job can verify. What each is actually for.',
+      'Compare IcoMoon and GlyphPact for Flutter icon fonts: visual editing and broad exports versus a local compiler, committed codepoint lock, and CI checks.',
     short: 'IcoMoon comparison',
     inNav: true,
   },
   vsFlutterIcon: {
     href: '/vs/fluttericon/',
     nav: 'vs FlutterIcon',
-    title: 'GlyphPact vs FlutterIcon.com: a fair comparison',
+    title: 'FlutterIcon.com alternative for local Flutter icon fonts',
     description:
-      'FlutterIcon.com is a hosted Fontello fork that generates Flutter icon fonts from a browser session. GlyphPact is a local CLI compiler with a committed codepoint registry. Where each one fits.',
+      'A FlutterIcon.com alternative for local SVG compilation, stable codepoints, CI checks, and reproducible Flutter IconData without repeated browser exports.',
     short: 'FlutterIcon comparison',
     inNav: true,
   },

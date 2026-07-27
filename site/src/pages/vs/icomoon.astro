@@ -1,9 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import Faq from '../../components/Faq.astro';
-import ComparisonTable from '../../components/ComparisonTable.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
+import ComparisonTable from '../../components/ComparisonTable.astro';
+import Faq from '../../components/Faq.astro';
 import InstallCommand from '../../components/InstallCommand.astro';
 import NextLinks from '../../components/NextLinks.astro';
 import SignalDiagram from '../../components/SignalDiagram.astro';
@@ -12,28 +12,22 @@ import { columnSets, VERIFIED_ON } from '../../data/comparison';
 import { articleSchema, breadcrumbSchema, faqSchema } from '../../lib/schema';
 
 const r = routes.vsIcomoon;
-/**
- * No intermediate "Comparisons" crumb: there is no /vs/ index page to link it
- * to, and an unlinked middle crumb is a weaker breadcrumb than a two-level one.
- * Two comparison pages do not justify a hub page that would say nothing.
- */
-const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'IcoMoon comparison' }];
+const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'IcoMoon alternative' }];
 const jsonLd = [articleSchema('vsIcomoon'), breadcrumbSchema(crumbs), faqSchema('icomoon')];
-
 const check = 'glyphpact --config icon_font.json --check';
 
 const workflowLanes = [
   {
     label: 'IcoMoon',
     tone: 'manual' as const,
-    nodes: ['Browser session', 'selection.json', 'Export pack'],
-    meta: 'Human-replayed workflow',
+    nodes: ['Offline-first app', 'icomoon.json', 'Export pack'],
+    meta: 'Visual project workflow',
   },
   {
     label: 'GlyphPact',
     tone: 'locked' as const,
     nodes: ['SVG directory', 'Committed lock', 'CI check'],
-    meta: 'Build-verifiable workflow',
+    meta: 'Repository build workflow',
   },
 ];
 ---
@@ -44,207 +38,176 @@ const workflowLanes = [
   <article class="gp-secondary">
     <header class="gp-shell gp-secondary-hero">
       <div class="gp-secondary-hero__body">
-        <p class="gp-annotation">Comparison</p>
-        <h1>GlyphPact and IcoMoon solve overlapping problems differently</h1>
+        <p class="gp-annotation">IcoMoon alternative</p>
+        <h1>An IcoMoon alternative for repository-managed Flutter icons</h1>
         <p class="gp-lede">
-          IcoMoon is a mature browser application for building icon fonts and web
-          assets. GlyphPact is a command-line compiler for keeping a generated icon
-          font under version control. They overlap, but neither replaces the other
-          outright, and this page tries to say exactly where the line is.
+          IcoMoon’s current app already imports folders, works offline, edits
+          glyphs visually, and exports a Dart class for Flutter. GlyphPact is for
+          a different boundary: SVG sources, codepoint history, generated
+          artifacts, typed reports, and a CI check kept together in the
+          repository.
         </p>
       </div>
 
       <SignalDiagram
         caption="Operating model"
-        title="Same category, different control plane"
+        title="Visual project or repository contract"
         lanes={workflowLanes}
       />
     </header>
 
-    <section class="gp-section" aria-labelledby="summary">
+    <section class="gp-section" aria-labelledby="decision-heading">
       <div class="gp-shell">
         <div class="gp-head">
           <p class="gp-annotation">Short answer</p>
-          <h2 id="summary">Which one you want</h2>
+          <h2 id="decision-heading">Choose by the work that must be repeatable</h2>
         </div>
-
         <div class="gp-grid gp-grid--2 gp-decision-grid">
-          <div class="gp-cell">
+          <div class="gp-cell" data-claims="third-party">
             <h3>Choose IcoMoon when</h3>
             <ul class="gp-plainlist">
-              <li>You need a web icon font with a stylesheet, ready to use.</li>
-              <li>
-                You want to browse, search, and visually edit glyphs, or pull from
-                large bundled icon libraries.
-              </li>
-              <li>You want React, Vue, or Elm components, or SVG sprites and PNGs.</li>
-              <li>Icon changes are occasional and done by a person, not a build.</li>
+              <li>You want to inspect, edit, align, and curate glyphs visually.</li>
+              <li>You need web fonts, CSS, SVG exports, or other broad formats.</li>
+              <li>You want an offline-first browser app and saved visual projects.</li>
+              <li>You want Flutter output without adding a Python CLI toolchain.</li>
             </ul>
           </div>
           <div class="gp-cell">
             <h3>Choose GlyphPact when</h3>
             <ul class="gp-plainlist">
-              <li>The icon pipeline should live in the repository and run in CI.</li>
-              <li>
-                You need a build to <em>fail</em> when generated output stops
-                matching its sources.
-              </li>
-              <li>You are shipping Flutter and want const <code>IconData</code>.</li>
-              <li>
-                You want unsupported SVG features reported as typed diagnostics
-                rather than approximated.
-              </li>
+              <li>The SVG folder is already part of the repository.</li>
+              <li>Existing IconData codepoints must survive every later batch.</li>
+              <li>CI must fail when committed output is stale.</li>
+              <li>An agent or script needs typed audit and build results.</li>
             </ul>
           </div>
         </div>
       </div>
     </section>
 
-    {/* Heading id must not collide with the FAQ entry id "uploads", which this
-        page also renders. */}
-    <section class="gp-section" aria-labelledby="local-processing">
-      <div class="gp-shell gp-prose">
-        <h2 id="local-processing">First, a correction worth making</h2>
+    <section class="gp-section" aria-labelledby="current-app-heading">
+      <div class="gp-shell gp-prose" data-claims="third-party">
+        <h2 id="current-app-heading">What the current IcoMoon app already does</h2>
         <p>
-          IcoMoon is frequently described as a service you upload artwork to.
-          According to IcoMoon's own documentation, that is not accurate, and it
-          matters enough to state plainly before comparing anything else.
+          Comparisons based on the old IcoMoon app are now misleading. The
+          current app is an offline-first progressive web app. It can import
+          files and folders, generate a Dart class for Flutter, edit vectors,
+          and handle strokes, masks, clip paths, gradients, and even-odd
+          geometry more fully during import.
+        </p>
+        <p>
+          Its current project format is <code>icomoon.json</code>.
+          <code>selection.json</code> belongs to the old app. The current app
+          also offers Replace by Matching Names so revised artwork can keep the
+          matching glyph’s metadata.
         </p>
         <p class="gp-note">
-          IcoMoon's FAQ states that <q>almost everything you do inside the IcoMoon
-          app happens locally</q>, that when you import SVG files or generate a
-          font <q>everything happens in your browser</q>, and that your SVGs
-          <q>won't get 'uploaded' to our servers; unless you choose to use our paid
-          plans, which enable saving of projects in your account</q>. It also
-          documents using the app offline after preloading the generate pages.
-        </p>
-        <p>
-          So "GlyphPact does not upload your artwork" is a true statement about
-          GlyphPact and a poor argument against IcoMoon. The real difference is
-          not where the bytes go. It is whether the pipeline is a document a
-          person operates or a command a build runs.
+          Privacy and offline use are not reasons to reject IcoMoon. The
+          relevant difference is whether the pipeline is a visual project a
+          person exports or a compiler contract that a repository can verify.
         </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="codepoints">
+    <section class="gp-section" aria-labelledby="contract-heading">
       <div class="gp-shell gp-prose">
-        <h2 id="codepoints">Codepoint stability: both have an answer</h2>
+        <h2 id="contract-heading">The repository contract is the differentiator</h2>
         <p>
-          IcoMoon does preserve codepoints, and the mechanism is documented.
-          Download a pack, keep the <code>selection.json</code> it contains, and
-          import that file when you next change the set. IcoMoon states that the
-          codes of previously selected glyphs will not change when you do.
+          GlyphPact writes <code>iconfont.lock.json</code> beside the generated
+          font and Dart provider. Existing assignments are reused automatically.
+          Removed icons become permanent tombstones, and a content-preserving
+          rename retains the original identity.
         </p>
         <p>
-          The condition is the interesting part. IcoMoon also documents that
-          <q>newly imported SVGs do not have any codes assigned to them</q>, and
-          that <q>re-importing all your SVGs and reselecting them each time would
-          most likely result in different codes</q>. There is also a filename
-          convention, <code>home-U0xE999</code>, for pinning a specific code on
-          import.
-        </p>
-        <p>
-          Stability therefore rests on a person retaining a file and performing an
-          import correctly, every time, forever, including the time a new
-          teammate does it. That is a real mechanism with a real failure mode, and
-          the failure mode is silent.
-        </p>
-        <p>
-          GlyphPact moves the same decision into the repository. The registry is a
-          committed file that the compiler reads automatically, so nobody has to
-          remember anything, and a reviewer can see codepoint changes in a diff.
-          More importantly, a build can verify it:
+          IcoMoon can preserve codes when its project file is retained and its
+          matching-name workflow is used correctly. GlyphPact makes that state a
+          normal reviewed file, then adds a first-party staleness check:
         </p>
       </div>
-
       <div class="gp-shell" style="max-width: 46rem; margin-block-start: 1.5rem">
-        <CodeBlock title="bash" meta="exit 3 = stale" copy={check}>{check}</CodeBlock>
+        <CodeBlock title="CI or local verification" meta="exit 3 = stale" copy={check}>
+          {check}
+        </CodeBlock>
       </div>
-
       <div class="gp-shell gp-prose" style="margin-block-start: 1.25rem">
         <p>
-          That difference, not privacy, is the honest reason to prefer a CLI here.
-          A GUI cannot fail your pull request.
+          IcoMoon’s current documentation does not describe a repository-native
+          command that compares committed output with sources and fails CI when
+          they differ. GlyphPact’s <code>--check</code> exists specifically for
+          that case.
         </p>
         <p>
           <a href={path(routes.codepoints.href)}
-            >How the committed codepoint registry works, with a real diff</a
-          >
+            >See how codepoints stay fixed as new Flutter icons arrive</a
+          >.
         </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="scope">
-      <div class="gp-shell gp-prose">
-        <h2 id="scope">Where IcoMoon is simply ahead</h2>
+    <section class="gp-section" aria-labelledby="ahead-heading">
+      <div class="gp-shell gp-prose" data-claims="third-party">
+        <h2 id="ahead-heading">Where IcoMoon remains the broader tool</h2>
         <p>
-          IcoMoon's documented export targets include a web font pack, SVG, SVG
-          sprites, Elm, React, Vue, tiles, PNG, favicons, and Photoshop custom
-          shapes. GlyphPact emits an OpenType font, a lock file, a report, an
-          attribution file, and Dart. That is the whole list.
+          IcoMoon has a visual editor and broader export surface. It generates
+          web font packs and CSS, and offers formats GlyphPact does not. GlyphPact
+          emits an OpenType/CFF font, a lock, a report, attribution, and a Dart
+          provider. It does not generate WOFF2, CSS, React, or Vue output.
         </p>
         <p>
-          GlyphPact produces no WOFF2 and no CSS, and it has no browser
-          integration. Getting its font onto a web page means converting the
-          <code>.otf</code> with a separate tool and writing the
-          <code>@font-face</code> rule and class names yourself, reading
-          codepoints out of the lock file as you go. If that is the job in front
-          of you, IcoMoon does it now and GlyphPact does not do it at all.
-        </p>
-        <p>
-          IcoMoon also has something GlyphPact deliberately lacks: a visual
-          interface. Browsing a set, spotting the wrong glyph, nudging a baseline,
-          picking from thousands of existing icons - a text-mode compiler is worse
-          at all of it.
+          If the main task is drawing, visually normalizing, or exporting for the
+          web, use IcoMoon. If the task is compiling an existing SVG pack for
+          Flutter with reviewable state and CI enforcement, GlyphPact is the
+          narrower fit.
         </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="table">
+    <section class="gp-section" aria-labelledby="table-heading">
       <div class="gp-shell">
         <div class="gp-head">
           <p class="gp-annotation">Side by side</p>
-          <h2 id="table">The full comparison</h2>
+          <h2 id="table-heading">Current capabilities, without the old-app myths</h2>
         </div>
         <ComparisonTable
           columns={columnSets.icomoon}
-          caption="GlyphPact v1.0.0 against IcoMoon, on the dimensions that differ."
+          caption="GlyphPact v1.1.0 and the current IcoMoon app, verified against first-party documentation."
         />
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="together">
+    <section class="gp-section" aria-labelledby="together-heading">
       <div class="gp-shell gp-prose">
-        <h2 id="together">They are not mutually exclusive</h2>
+        <h2 id="together-heading">The tools can share a workflow</h2>
         <p>
-          A reasonable arrangement uses both: design and curate in IcoMoon, export
-          the SVG sources, and commit those sources as the input GlyphPact
-          compiles. The visual work happens where visual work is good, and the
-          build-time guarantees happen where a build can enforce them.
+          Use IcoMoon for visual curation when that editor helps, export the SVG
+          sources, and make those sources the input to a checked-in GlyphPact
+          config. The design task stays visual. The Flutter build becomes local,
+          deterministic, and reviewable.
         </p>
         <p>
-          GlyphPact only ever reads your SVG directory, so it does not care what
-          produced the files.
+          <a href={path(routes.bulk.href)}
+            >Follow the bulk SVG-to-Flutter icon workflow</a
+          >.
         </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="try">
+    <section class="gp-section" aria-labelledby="try-heading">
       <div class="gp-shell gp-try-band">
         <div class="gp-head">
-          <p class="gp-annotation">Try it</p>
-          <h2 id="try">Point it at a directory you already have</h2>
+          <p class="gp-annotation">Try locally</p>
+          <h2 id="try-heading">Point GlyphPact at an SVG folder</h2>
         </div>
         <div class="gp-try-band__body">
           <InstallCommand explainInstall />
           <p class="gp-verified" style="margin-block-start: 2rem">
             <strong>IcoMoon behaviour verified on {VERIFIED_ON}</strong>
             <span>
-              against <a href="https://icomoon.io/docs">icomoon.io/docs</a> and
-              <a href="https://icomoon.io/old-faq">icomoon.io/old-faq</a>. Quoted
-              text is IcoMoon's own. If any of this has changed, it should be
-              corrected.
+              against <a href="https://icomoon.io/docs">current IcoMoon docs</a>,
+              the <a href="https://icomoon.io/">current app overview</a>, and
+              <a href="https://icomoon.io/news/start-tool-flutter-scss-variables"
+                >IcoMoon’s Flutter and Dart announcement</a
+              >. This page should be corrected when the product changes.
             </span>
           </p>
         </div>
@@ -254,7 +217,7 @@ const workflowLanes = [
 
   <Faq page="icomoon" heading="Questions about the comparison" />
 
-  <NextLinks keys={['codepoints', 'vsFlutterIcon', 'flutter']} />
+  <NextLinks keys={['bulk', 'codepoints', 'vsFlutterIcon', 'flutter']} />
 </Base>
 
 <style>
@@ -283,9 +246,5 @@ const workflowLanes = [
     block-size: 6px;
     background: var(--accent);
     transform: rotate(45deg);
-  }
-
-  q {
-    font-style: italic;
   }
 </style>

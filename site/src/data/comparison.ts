@@ -16,7 +16,7 @@
  *   data says so, because it is true and it matters.
  */
 
-export const VERIFIED_ON = '2026-07-25';
+export const VERIFIED_ON = '2026-07-27';
 
 export type Support =
   /** Supported directly, without user-maintained bookkeeping. */
@@ -72,18 +72,21 @@ export const tools: Tool[] = [
       { label: 'README', href: 'https://github.com/omar-hanafy/glyphpact#readme' },
       {
         label: 'SVG profile',
-        href: 'https://github.com/omar-hanafy/glyphpact/blob/v1.0.0/docs/svg-profile.md',
+        href: 'https://github.com/omar-hanafy/glyphpact/blob/v1.1.0/docs/svg-profile.md',
       },
     ],
   },
   {
     id: 'icomoon',
     name: 'IcoMoon',
-    kind: 'Browser app',
+    kind: 'Offline-first browser app',
     href: 'https://icomoon.io/',
     sources: [
       { label: 'IcoMoon docs', href: 'https://icomoon.io/docs' },
-      { label: 'IcoMoon FAQ', href: 'https://icomoon.io/old-faq' },
+      {
+        label: 'Flutter and Dart update',
+        href: 'https://icomoon.io/news/start-tool-flutter-scss-variables',
+      },
     ],
   },
   {
@@ -129,8 +132,8 @@ export const dimensions: Dimension[] = [
       },
       icomoon: {
         support: 'conditional',
-        value: 'If you re-import selection.json',
-        note: 'The FAQ states the codes of previously selected glyphs will not change when the previous `selection.json` is imported, and that "newly imported SVGs do not have any codes assigned to them", so re-importing and reselecting everything "would most likely result in different codes". Stability depends on keeping that file and importing it every time.',
+        value: 'Project file plus matching-name replacement',
+        note: 'The current app stores its project in `icomoon.json`. Its Replace by Matching Names workflow can update matching glyphs without changing their metadata. Stability depends on retaining the project and using that workflow correctly.',
       },
       fluttericon: {
         support: 'conditional',
@@ -160,9 +163,9 @@ export const dimensions: Dimension[] = [
         note: 'Rebuilds a candidate artifact set and compares it without rewriting the owned output tree. Verified: exit 0 on current output, exit 3 after a source edit.',
       },
       icomoon: {
-        support: 'no',
-        value: 'No CLI to run in CI',
-        note: 'The documentation describes a browser application, with no command-line interface.',
+        support: 'undocumented',
+        value: 'No documented repository staleness check',
+        note: 'Current first-party documentation describes an offline-first browser app, project files, and exports. It does not document a command that compares committed output with sources and fails CI when they differ.',
       },
       fluttericon: {
         support: 'no',
@@ -193,8 +196,8 @@ export const dimensions: Dimension[] = [
       },
       icomoon: {
         support: 'yes',
-        value: 'In-browser, not uploaded',
-        note: 'The FAQ states that "when you import SVG files or when you generate a font, everything happens in your browser", and that SVGs are not uploaded unless you opt into paid project storage. It also documents working offline after preloading the generate pages.',
+        value: 'Offline-first PWA',
+        note: 'The current app is documented as an offline-first progressive web app. Imported files and generated assets are processed locally unless the user opts into account-backed project storage.',
       },
       fluttericon: {
         support: 'no',
@@ -239,7 +242,11 @@ export const dimensions: Dimension[] = [
         value: 'Two policy axes, both strict by default',
         note: '`lossy` and `unrepresentable` each default to `error`. Approximations and omissions require explicit opt-in and are reported as typed, coded issues.',
       },
-      icomoon: { support: 'undocumented', value: 'No published policy' },
+      icomoon: {
+        support: 'undocumented',
+        value: 'Import support, no typed build policy',
+        note: 'The current app documents broader import support, including strokes and even-odd geometry without manual conversion. It does not publish GlyphPact-style lossless, lossy, and unrepresentable build outcomes with coded report entries.',
+      },
       fluttericon: { support: 'undocumented', value: 'No published policy' },
       icon_font_generator: {
         support: 'undocumented',
@@ -260,9 +267,9 @@ export const dimensions: Dimension[] = [
         note: 'Emits a tree-shakeable `@staticIconProvider` class, optional same-file name-keyed enumeration, `fontPackage` handling, and layered-icon widgets.',
       },
       icomoon: {
-        support: 'no',
-        value: 'No Dart output',
-        note: 'Documented export targets are Font, SVG, SVG sprite, Elm, React, Vue, Tiles, PNG, Favicon, and CSH.',
+        support: 'yes',
+        value: 'Dart class for Flutter',
+        note: 'The current IcoMoon app exports a Dart class for Flutter.',
       },
       fluttericon: {
         support: 'yes',

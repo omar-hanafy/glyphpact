@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "generator": "glyphpact",
+  "generatorVersion": "1.0.1",
+  "fontFamily": "GlyphPactIcons",
+  "className": "GlyphPactIcons",
+  "fontPackage": null,
+  "startCodepoint": "0xE000",
+  "unitsPerEm": 1000,
+  "glyphs": [
+    {
+      "source": "Chat Bold.svg",
+      "name": "chatBold",
+      "codepoint": "0xE000",
+      "sourceSha256": "b5f61cf41dabe05e951a168e326c978e0df1629c41e290383ff0768c513f5596",
+      "matchTextDirection": false,
+      "geometrySha256": "44c71745dd656042fa395748f8389136e870af3ec665245c47b2563391a8a355"
+    },
+    {
+      "source": "Location Bold.svg",
+      "name": "locationBold",
+      "codepoint": "0xE001",
+      "sourceSha256": "e94b5515ac6fdd17f56cc6eac61505772b2f49485fecec53712076fa26b51246",
+      "matchTextDirection": false,
+      "geometrySha256": "c921dc3f319528a388da3e8760a9470046680954a8c2110077d6230ffcc7e1ea"
+    },
+    {
+      "source": "Mail Bold.svg",
+      "name": "mailBold",
+      "codepoint": "0xE002",
+      "sourceSha256": "b349f283ef049a50afd848214e7cc52e9cb4dda2e291a590c2f53968855b62b9",
+      "matchTextDirection": false,
+      "geometrySha256": "f4901956c1dbf635abf146a7c6c62f0df9dce596d41e4fd7cb39c71f2d598bb9"
+    }
+  ],
+  "retired": []
+}

@@ -1,0 +1,392 @@
+---
+import Base from '../layouts/Base.astro';
+import ArtifactTree from '../components/ArtifactTree.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+import Faq from '../components/Faq.astro';
+import InstallCommand from '../components/InstallCommand.astro';
+import NextLinks from '../components/NextLinks.astro';
+import SignalDiagram from '../components/SignalDiagram.astro';
+import { capacity } from '../data/product';
+import { path, routes } from '../site.config';
+import { articleSchema, breadcrumbSchema, faqSchema } from '../lib/schema';
+
+const r = routes.bulk;
+const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'Bulk SVG to Flutter icons' }];
+const jsonLd = [articleSchema('bulk'), breadcrumbSchema(crumbs), faqSchema('bulk')];
+
+const compile = `glyphpact assets/icons \\
+  --output lib/generated/app_icons \\
+  --name AppIcons`;
+
+const audit = `audit_icon_pack({
+  "input_path": "/absolute/path/to/assets/icons",
+  "limit": 100
+})`;
+
+const config = `{
+  "input": "assets/icons",
+  "output": "lib/generated/app_icons",
+  "fontFamily": "AppIcons",
+  "className": "AppIcons",
+  "policy": {
+    "lossy": "error",
+    "unrepresentable": "error"
+  }
+}`;
+
+const ci = `- name: Verify generated Flutter icons
+  run: glyphpact --config icon_font.json --check --json`;
+
+const bulkFlow = [
+  {
+    label: 'Local repository build',
+    tone: 'locked' as const,
+    nodes: ['assets/icons/**', 'audit + compile', 'font + IconData', 'lock + report'],
+    meta: 'Recursive input. Reviewable output. No upload step.',
+  },
+];
+---
+
+<Base title={r.title} description={r.description} canonical={r.href} ogSlug="bulk" jsonLd={jsonLd}>
+  <Breadcrumbs crumbs={crumbs} />
+
+  <article class="gp-secondary">
+    <header class="gp-shell gp-secondary-hero">
+      <div class="gp-secondary-hero__body">
+        <p class="gp-annotation">Bulk SVG workflow</p>
+        <h1>Convert a folder of SVGs to Flutter icons</h1>
+        <p class="gp-lede">
+          Point one local CLI at an SVG directory. GlyphPact discovers nested
+          files, audits what an icon font cannot preserve, and generates an
+          OpenType font, const Flutter <code>IconData</code>, a stable codepoint
+          lock, and a machine-readable report.
+        </p>
+        <div class="gp-actions">
+          <a class="gp-btn gp-btn--primary" href="#compile-folder">Compile a folder</a>
+          <a class="gp-btn" href="#alternatives">Compare workflows</a>
+        </div>
+      </div>
+
+      <SignalDiagram
+        caption="Folder to Flutter"
+        title="One repository-controlled pipeline"
+        lanes={bulkFlow}
+      />
+    </header>
+
+    <section class="gp-section" id="compile-folder" aria-labelledby="compile-folder-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Local CLI</p>
+          <h2 id="compile-folder-heading">From an SVG folder to Flutter IconData</h2>
+          <p class="gp-lede">
+            There is no upload queue and no repeated drag-and-drop session. The
+            directory stays the source of truth.
+          </p>
+        </div>
+
+        <div class="gp-grid gp-grid--2 gp-bulk-start">
+          <div class="gp-cell">
+            <h3>1. Install and compile</h3>
+            <InstallCommand explainInstall />
+            <div style="margin-block-start: 1rem">
+              <CodeBlock title="bash" copy={compile}>{compile}</CodeBlock>
+            </div>
+          </div>
+          <div class="gp-cell">
+            <h3>2. Keep the workflow in the repository</h3>
+            <p>
+              Check in a config when the paths and policies should be identical
+              for every developer, build runner, and coding agent.
+            </p>
+            <CodeBlock title="icon_font.json" copy={config}>{config}</CodeBlock>
+          </div>
+        </div>
+
+        <div class="gp-prose" style="margin-block-start: 2rem">
+          <p>
+            Discovery is recursive. Files such as
+            <code>assets/icons/navigation/back.svg</code> and
+            <code>assets/icons/status/verified.svg</code> can stay in meaningful
+            folders. Their normalized relative paths become stable source
+            identities instead of being flattened into one browser selection.
+          </p>
+          <p>
+            Need the application wiring after generation?
+            <a href={path(routes.flutter.href)}
+              >Register the font and use the generated IconData in Flutter</a
+            >.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="audit-heading">
+      <div class="gp-shell gp-feature-split">
+        <div class="gp-head">
+          <p class="gp-annotation">Before generation</p>
+          <h2 id="audit-heading">Audit a large pack through MCP before generating the font</h2>
+          <p class="gp-lede">
+            An SVG that looks correct in Figma or a browser is not automatically
+            a faithful monochrome font glyph.
+          </p>
+        </div>
+        <div>
+          <CodeBlock title="Read-only MCP tool call" copy={audit}>{audit}</CodeBlock>
+          <p style="margin-block-start: 1rem">
+            GlyphPact classifies each source as lossless, deterministically
+            approximable, or unrepresentable. Strict defaults fail on the last
+            two outcomes. Nothing is silently accepted just because a pack is
+            large.
+          </p>
+          <p class="gp-note" style="margin-block-start: 1rem">
+            Keep multicolour artwork, gradients, filters, and animation as SVG
+            assets when their meaning depends on those features. An icon font is
+            a monochrome runtime representation, not a universal SVG container.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="output-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Generated contract</p>
+          <h2 id="output-heading">Commit more than the font file</h2>
+          <p class="gp-lede">
+            The Dart provider is only one output. The lock and report are what
+            make later updates reviewable and checkable.
+          </p>
+        </div>
+        <ArtifactTree />
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="batches-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Repeated Figma deliveries</p>
+          <h2 id="batches-heading">Three icons become five, ten, then one hundred</h2>
+          <p class="gp-lede">
+            Existing assignments should not be recalculated every time design
+            hands over another batch.
+          </p>
+        </div>
+
+        <ol class="gp-batch-line" aria-label="Icon pack growth from 3 to 100 icons">
+          <li><strong>3</strong><span>first delivery</span></li>
+          <li><strong>5</strong><span>two additions</span></li>
+          <li><strong>10</strong><span>another batch</span></li>
+          <li><strong>100</strong><span>the project scales</span></li>
+        </ol>
+
+        <div class="gp-prose" style="margin-block-start: 2rem">
+          <p>
+            GlyphPact reuses every assignment already recorded in
+            <code>iconfont.lock.json</code>. Only new source identities receive
+            unused codepoints. Deleted icons leave tombstones, so a value that
+            shipped once cannot later mean a different picture.
+          </p>
+          <p>
+            <a href={path(routes.codepoints.href)}
+              >See how to add Flutter icons without changing existing
+              codepoints</a
+            >.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="automation-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Automation</p>
+          <h2 id="automation-heading">Use the same inputs in CI and through MCP</h2>
+        </div>
+        <div class="gp-grid gp-grid--2 gp-decision-grid">
+          <div class="gp-cell">
+            <h3>Fail CI on stale output</h3>
+            <p>
+              <code>--check</code> rebuilds a candidate artifact set without
+              rewriting the owned output. Exit code <code>3</code> means the
+              committed font, provider, lock, or report no longer matches its
+              sources.
+            </p>
+            <CodeBlock title=".github/workflows/ci.yml" copy={ci}>{ci}</CodeBlock>
+          </div>
+          <div class="gp-cell">
+            <h3>Let an agent audit before it builds</h3>
+            <p>
+              The local MCP server exposes read-only audit, build, staleness
+              check, and paged report tools. An agent can inspect a large pack
+              in bounded pages, ask before changing fidelity policy, build, and
+              verify the published artifacts without opening a browser.
+            </p>
+            <p>
+              <a href={path(routes.mcp.href)}
+                >Configure SVG-to-Flutter icon automation with MCP</a
+              >.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="capacity-heading">
+      <div class="gp-shell gp-prose">
+        <h2 id="capacity-heading">A 100,000-icon catalogue needs more than one font</h2>
+        <p>
+          One OpenType font can contain at most
+          <strong>{capacity.glyphCeiling} usable glyphs</strong>. GlyphPact
+          enforces that limit. The default BMP private use range,
+          <code>{capacity.bmpRange}</code>, is smaller:
+          {capacity.bmpSlots} lifetime assignments including tombstones.
+        </p>
+        <p>
+          A complete supplementary private use range provides up to
+          {capacity.supplementarySlots} assignments. A catalogue beyond that
+          must be sharded into independently named and versioned fonts. Do not
+          change the starting codepoint of an established lock to make space.
+        </p>
+        <p class="gp-note">
+          A directory near 100,000 entries also approaches the default discovery
+          work limit, which counts filesystem entries rather than only SVG files.
+          Split intentionally and benchmark the real corpus. File count alone
+          does not predict compile time or runtime cost.
+        </p>
+      </div>
+    </section>
+
+    <section class="gp-section" id="alternatives" aria-labelledby="alternatives-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Choosing a generator</p>
+          <h2 id="alternatives-heading">Local CLI or browser-based SVG-to-icon generator</h2>
+          <p class="gp-lede">
+            GlyphPact is an offline Flutter icon-font generator for repositories.
+            Other tools are better for visual selection or web output.
+          </p>
+        </div>
+        <div class="gp-grid gp-grid--2 gp-decision-grid" data-claims="third-party">
+          <div class="gp-cell">
+            <h3>FlutterIcon.com</h3>
+            <p>
+              Convenient for browsing bundled icon packs and making an occasional
+              Flutter export in a browser. Use GlyphPact when the SVG folder
+              changes repeatedly and CI must prove committed output is current.
+            </p>
+            <a href={path(routes.vsFlutterIcon.href)}
+              >FlutterIcon.com alternative and tested SVG comparison</a
+            >
+          </div>
+          <div class="gp-cell">
+            <h3>IcoMoon</h3>
+            <p>
+              The current IcoMoon app supports Flutter output, folder import,
+              offline-first use, and a visual editor. GlyphPact’s distinction is
+              the repository lock, typed reports, deterministic compiler, and
+              first-party staleness check.
+            </p>
+            <a href={path(routes.vsIcomoon.href)}
+              >IcoMoon alternative for repository-managed icons</a
+            >
+          </div>
+          <div class="gp-cell">
+            <h3>Fontello</h3>
+            <p>
+              Fontello provides a browser catalogue, a developer API, and
+              third-party CLI tooling. GlyphPact is the narrower choice when
+              source SVGs, stable Flutter IconData, and generated artifacts
+              should live in one local build contract.
+            </p>
+          </div>
+          <div class="gp-cell">
+            <h3>flutter_svg</h3>
+            <p>
+              Keep artwork as SVG assets when it needs multiple colours,
+              gradients, filters, animation, or independent scaling. Use an icon
+              font for monochrome interface symbols that should behave through
+              <code>IconData</code> and <code>IconTheme</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="start-heading">
+      <div class="gp-shell gp-try-band">
+        <div class="gp-head">
+          <p class="gp-annotation">Start locally</p>
+          <h2 id="start-heading">Audit the folder you already have</h2>
+        </div>
+        <div class="gp-try-band__body">
+          <InstallCommand explainInstall />
+          <p class="gp-muted" style="margin-block-start: 1.25rem">
+            Source SVGs are read from disk. Compilation does not upload artwork
+            or require a hosted project.
+          </p>
+        </div>
+      </div>
+    </section>
+  </article>
+
+  <Faq page="bulk" heading="Bulk SVG conversion questions" />
+
+  <NextLinks keys={['flutter', 'codepoints', 'mcp', 'vsFlutterIcon']} />
+</Base>
+
+<style>
+  .gp-bulk-start .gp-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .gp-batch-line {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-block: 1px solid var(--rule);
+  }
+
+  .gp-batch-line li {
+    position: relative;
+    padding: clamp(1rem, 3vw, 1.75rem);
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .gp-batch-line li + li {
+    border-inline-start: 1px solid var(--rule);
+  }
+
+  .gp-batch-line strong {
+    color: var(--accent);
+    font-family: var(--gp-font-mono);
+    font-size: clamp(1.8rem, 5vw, 3.8rem);
+    line-height: 1;
+  }
+
+  .gp-batch-line span {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 40rem) {
+    .gp-batch-line {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .gp-batch-line li:nth-child(3) {
+      border-inline-start: 0;
+      border-block-start: 1px solid var(--rule);
+    }
+
+    .gp-batch-line li:nth-child(4) {
+      border-block-start: 1px solid var(--rule);
+    }
+  }
+</style>

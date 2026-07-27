@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 2,
+  "generator": "glyphpact",
+  "generatorVersion": "1.0.1",
+  "status": "success",
+  "quality": "lossless",
+  "policy": {
+    "lossy": "error",
+    "unrepresentable": "error"
+  },
+  "discoveredIconCount": 3,
+  "glyphCount": 3,
+  "losslessGlyphCount": 3,
+  "approximatedGlyphCount": 0,
+  "skippedIconCount": 0,
+  "issueCount": 0,
+  "issues": [],
+  "retiredCodepointCount": 0,
+  "textFonts": [],
+  "font": {
+    "family": "GlyphPactIcons",
+    "format": "OpenType/CFF",
+    "file": "fonts/GlyphPactIcons.otf",
+    "sha256": "26a6c71d001d303d31ebedee5857baa58c9399499f77f32e1925d71c556eeea0",
+    "bytes": 1956,
+    "unitsPerEm": 1000,
+    "ascent": 1000,
+    "descent": 0,
+    "tables": [
+      "CFF ",
+      "OS/2",
+      "cmap",
+      "head",
+      "hhea",
+      "hmtx",
+      "maxp",
+      "name",
+      "post"
+    ]
+  },
+  "layerFonts": [],
+  "dart": {
+    "className": "GlyphPactIcons",
+    "file": "glyph_pact_icons.dart",
+    "fontPackage": null
+  },
+  "lockFile": "iconfont.lock.json",
+  "attributionFile": "ATTRIBUTION.md",
+  "glyphs": [
+    {
+      "source": "Chat Bold.svg",
+      "name": "chatBold",
+      "codepoint": "0xE000",
+      "sourceSha256": "b5f61cf41dabe05e951a168e326c978e0df1629c41e290383ff0768c513f5596",
+      "geometrySha256": "44c71745dd656042fa395748f8389136e870af3ec665245c47b2563391a8a355",
+      "sourceBytes": 1233,
+      "sourceShapes": 1,
+      "pathCommands": 37,
+      "viewBox": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "fontBounds": [
+        52.0,
+        52.268224,
+        948.0,
+        948.0
+      ],
+      "advance": 1000,
+      "matchTextDirection": false,
+      "conversion": "lossless",
+      "issues": []
+    },
+    {
+      "source": "Location Bold.svg",
+      "name": "locationBold",
+      "codepoint": "0xE001",
+      "sourceSha256": "e94b5515ac6fdd17f56cc6eac61505772b2f49485fecec53712076fa26b51246",
+      "geometrySha256": "c921dc3f319528a388da3e8760a9470046680954a8c2110077d6230ffcc7e1ea",
+      "sourceBytes": 675,
+      "sourceShapes": 1,
+      "pathCommands": 18,
+      "viewBox": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "fontBounds": [
+        94.0,
+        52.0,
+        906.0,
+        948.0
+      ],
+      "advance": 1000,
+      "matchTextDirection": false,
+      "conversion": "lossless",
+      "issues": []
+    },
+    {
+      "source": "Mail Bold.svg",
+      "name": "mailBold",
+      "codepoint": "0xE002",
+      "sourceSha256": "b349f283ef049a50afd848214e7cc52e9cb4dda2e291a590c2f53968855b62b9",
+      "geometrySha256": "f4901956c1dbf635abf146a7c6c62f0df9dce596d41e4fd7cb39c71f2d598bb9",
+      "sourceBytes": 1663,
+      "sourceShapes": 1,
+      "pathCommands": 43,
+      "viewBox": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "fontBounds": [
+        52.25,
+        114.5,
+        947.75,
+        885.5
+      ],
+      "advance": 1000,
+      "matchTextDirection": false,
+      "conversion": "lossless",
+      "issues": []
+    }
+  ],
+  "skippedIcons": []
+}

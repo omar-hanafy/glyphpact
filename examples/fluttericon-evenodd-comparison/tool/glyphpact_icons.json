@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/omar-hanafy/glyphpact/main/schema/icon-font-config.schema.json",
+  "input": "../assets/source_svg",
+  "output": "../lib/generated/glyphpact",
+  "fontFamily": "GlyphPactIcons",
+  "className": "GlyphPactIcons",
+  "fontPackage": null,
+  "startCodepoint": "0xE000",
+  "unitsPerEm": 1000,
+  "precision": 3,
+  "padding": 0,
+  "clipToViewBox": true,
+  "policy": {
+    "lossy": "error",
+    "unrepresentable": "error"
+  },
+  "jobs": 0,
+  "icons": {
+    "Chat Bold.svg": {
+      "name": "chatBold"
+    },
+    "Location Bold.svg": {
+      "name": "locationBold"
+    },
+    "Mail Bold.svg": {
+      "name": "mailBold"
+    }
+  }
+}

@@ -6,7 +6,7 @@ import Faq from '../components/Faq.astro';
 import McpArchitecture from '../components/McpArchitecture.astro';
 import McpClientSetup from '../components/McpClientSetup.astro';
 import NextLinks from '../components/NextLinks.astro';
-import { site, routes, RELEASE } from '../site.config';
+import { site, path, routes, RELEASE } from '../site.config';
 import {
   mcpClients,
   mcpPrompts,
@@ -43,11 +43,13 @@ const contents = [
     <header class="gp-shell gp-secondary-hero">
       <div class="gp-secondary-hero__body">
         <p class="gp-annotation">GlyphPact MCP server</p>
-        <h1>Run GlyphPact from the agent you already use</h1>
+        <h1>Automate SVG-to-Flutter icon builds with MCP</h1>
         <p class="gp-lede">
           Install the full plugin in Claude Code or Codex, or add the same local
           stdio server to Antigravity, Cursor, JetBrains, VS Code, Zed,
           Windsurf, Gemini CLI, and other MCP clients.
+          Audit large SVG folders in bounded pages, build locally, and check the
+          generated Flutter artifacts without dragging files into a browser.
         </p>
         <div class="gp-actions">
           <a class="gp-btn gp-btn--primary" href="#install">Choose an install</a>
@@ -233,6 +235,11 @@ const contents = [
                 Use an absolute SVG or config path. Keep both fidelity policies
                 at their strict defaults until you have reviewed every finding.
               </p>
+              <p>
+                <a href={path(routes.bulk.href)}
+                  >See how the same directory becomes a bulk Flutter icon build</a
+                >.
+              </p>
             </div>
           </li>
           <li>
@@ -345,8 +352,9 @@ const contents = [
             <div>
               <h3>Audit with strict defaults</h3>
               <p>
-                Provide one absolute SVG path, directory, or config path.
-                Approximation and omission both start as errors.
+                Provide one absolute SVG path, directory, or config path. Large
+                folders return a paged snapshot. Approximation and omission both
+                start as errors.
               </p>
             </div>
           </li>
@@ -566,7 +574,7 @@ const contents = [
 
     <NextLinks
       heading="Continue with GlyphPact"
-      keys={['flutter', 'codepoints']}
+      keys={['bulk', 'flutter', 'codepoints']}
       extra={[
         {
           href: site.links.pluginGuide,

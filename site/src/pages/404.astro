@@ -12,7 +12,7 @@ import BrandMark from '../components/BrandMark.astro';
 
 <Base
   title="Page not found"
-  description="That page does not exist on the GlyphPact site. Links to the overview, stable-codepoints explainer, Flutter and MCP guides, and comparisons."
+  description="That page does not exist on the GlyphPact site. Links to the bulk SVG guide, stable-codepoints explainer, Flutter and MCP guides, and comparisons."
   canonical="/404/"
   ogSlug="404"
   noindex
@@ -30,6 +30,10 @@ import BrandMark from '../components/BrandMark.astro';
       <li>
         <a href={path(routes.home.href)}>Overview</a>
         <span>What GlyphPact is, what it generates, and the workflow.</span>
+      </li>
+      <li>
+        <a href={path(routes.bulk.href)}>Bulk SVG to Flutter icons</a>
+        <span>Recursive folder conversion, CI, MCP, and large-pack boundaries.</span>
       </li>
       <li>
         <a href={path(routes.codepoints.href)}>Stable codepoints</a>
