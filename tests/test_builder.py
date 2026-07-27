@@ -16,6 +16,7 @@ from glyphpact.builder import build
 from glyphpact.config import (
     BuildConfig,
     ConversionPolicy,
+    IconOverride,
     LossyPolicy,
     TextFont,
     UnrepresentablePolicy,
@@ -120,6 +121,9 @@ def test_end_to_end_build_is_reproducible_and_font_is_valid(tmp_path, simple_svg
     assert first.skipped_icon_count == 0
     assert first.issues == ()
     assert first.quality == "lossless"
+    assert first.codepoints_remaining == 6_398
+    assert first.range_utilization == 2 / 6_400
+    assert first.warnings == ()
     assert MARKER in first_tree
     assert build(config, check=True).checked
 
@@ -314,6 +318,154 @@ def test_supplementary_private_use_codepoint_generates_format_12_cmap(
     assert any(table.format == 12 for table in font["cmap"].tables)
     font.close()
     assert "0xF0000" in result.dart_path.read_text(encoding="utf-8")
+    assert result.codepoints_remaining == 65_533
+    assert result.range_utilization == 1 / 65_534
+    assert result.warnings == ()
+
+
+def test_capacity_warning_tracks_tombstones_and_exhaustion_without_rewriting(
+    tmp_path: Path,
+    simple_svg: str,
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+
+    def add_icon(index: int) -> Path:
+        return write_svg(
+            inputs,
+            f"icon_{index}.svg",
+            simple_svg.replace("<path", f"<!-- icon {index} --><path"),
+        )
+
+    for index in range(3):
+        add_icon(index)
+    config = _config(inputs, output, start_codepoint=0xF8FB)
+
+    below_threshold = build(config)
+    assert below_threshold.codepoints_remaining == 2
+    assert below_threshold.range_utilization == 3 / 5
+    assert below_threshold.warnings == ()
+
+    add_icon(3)
+    at_threshold = build(config)
+    assert at_threshold.codepoints_remaining == 1
+    assert at_threshold.range_utilization == 4 / 5
+    assert [warning.code for warning in at_threshold.warnings] == [
+        "CODEPOINT_RANGE_NEAR_EXHAUSTION"
+    ]
+    assert at_threshold.warnings[0].details == {
+        "capacity": 5,
+        "codepointsRemaining": 1,
+        "consumed": 4,
+        "endCodepoint": "0xF8FF",
+        "rangeUtilization": 4 / 5,
+        "startCodepoint": "0xF8FB",
+        "threshold": 0.8,
+    }
+    near_full_supplementary = builder_module._CodepointCapacity(
+        start=0xF0000,
+        end=0xFFFFD,
+        capacity=65_534,
+        consumed=65_533,
+        remaining=1,
+        utilization=65_533 / 65_534,
+    ).warnings[0]
+    assert (
+        near_full_supplementary.message
+        == "65,533 of 65,534 codepoints in the configured private-use allocation "
+        "window are consumed (99.9985%); 1 codepoint remains."
+    )
+    report = json.loads(at_threshold.report_path.read_text(encoding="utf-8"))
+    assert report["schemaVersion"] == 3
+    assert report["codepointsRemaining"] == 1
+    assert report["rangeUtilization"] == 4 / 5
+    checked = build(config, check=True)
+    assert checked.warnings == at_threshold.warnings
+
+    (inputs / "icon_0.svg").unlink()
+    tombstoned = build(config)
+    assert tombstoned.glyph_count == 3
+    assert _lock(output)["retired"][0]["codepoint"] == "0xF8FB"
+    assert tombstoned.codepoints_remaining == 1
+    assert tombstoned.range_utilization == 4 / 5
+    assert len(tombstoned.warnings) == 1
+
+    add_icon(4)
+    full = build(config)
+    assert full.codepoints_remaining == 0
+    assert full.range_utilization == 1
+    assert len(full.warnings) == 1
+    before_exhaustion = _tree(output)
+
+    add_icon(5)
+    with pytest.raises(IconFontError) as caught:
+        build(config)
+    assert caught.value.diagnostic.code == "CODEPOINT_RANGE_EXHAUSTED"
+    assert "another stable font family" in (caught.value.diagnostic.hint or "")
+    assert _tree(output) == before_exhaustion
+
+
+def test_new_unpublished_pack_exhaustion_recommends_supplementary_range(
+    tmp_path: Path,
+    simple_svg: str,
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    for index in range(6):
+        write_svg(
+            inputs,
+            f"icon_{index}.svg",
+            simple_svg.replace("<path", f"<!-- icon {index} --><path"),
+        )
+
+    with pytest.raises(IconFontError) as caught:
+        build(_config(inputs, output, start_codepoint=0xF8FB))
+
+    assert caught.value.diagnostic.code == "CODEPOINT_RANGE_EXHAUSTED"
+    assert "U+F0000" in (caught.value.diagnostic.hint or "")
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("new_start", [0xE001, 0xF0000])
+def test_established_lock_rejects_start_codepoint_changes_without_rewriting(
+    tmp_path: Path,
+    simple_svg: str,
+    new_start: int,
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "icon.svg", simple_svg)
+    config = _config(inputs, output)
+    build(config)
+    before = _tree(output)
+
+    with pytest.raises(IconFontError) as caught:
+        build(replace(config, start_codepoint=new_start))
+
+    assert caught.value.diagnostic.code == "LOCK_START_CODEPOINT_MISMATCH"
+    assert _tree(output) == before
+
+
+def test_lock_rejects_assignment_outside_declared_allocation_window(
+    tmp_path: Path,
+    simple_svg: str,
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "icon.svg", simple_svg)
+    config = _config(inputs, output)
+    build(config)
+    lock = _lock(output)
+    lock["glyphs"][0]["codepoint"] = "0xF0000"
+    (output / "iconfont.lock.json").write_text(
+        json.dumps(lock, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(IconFontError) as caught:
+        build(config)
+
+    assert caught.value.diagnostic.code == "LOCK_CODEPOINT_RANGE_MISMATCH"
 
 
 def test_output_directory_requires_explicit_ownership(tmp_path, simple_svg: str) -> None:
@@ -459,7 +611,7 @@ def test_conversion_policy_axes_form_a_complete_two_by_two_matrix(
     assert "geometrySha256" not in lock["retired"][0]
 
     report = json.loads(result.report_path.read_text(encoding="utf-8"))
-    assert report["schemaVersion"] == 2
+    assert report["schemaVersion"] == 3
     assert report["quality"] == "partial"
     assert report["policy"] == {"lossy": "convert", "unrepresentable": "skip"}
     assert report["discoveredIconCount"] == 3
@@ -469,6 +621,8 @@ def test_conversion_policy_axes_form_a_complete_two_by_two_matrix(
     assert report["skippedIconCount"] == 1
     assert report["issueCount"] == len(result.issues)
     assert report["issues"] == [issue.to_dict() for issue in result.issues]
+    assert report["codepointsRemaining"] == 6_397
+    assert report["rangeUtilization"] == 3 / 6_400
     assert {glyph["conversion"] for glyph in report["glyphs"]} == {
         "lossless",
         "approximated",
@@ -564,10 +718,13 @@ def test_all_skipped_batch_fails_atomically_and_preserves_last_good_output(
     config = _config(
         inputs,
         output,
+        catalog=True,
         jobs=1,
         policy=ConversionPolicy(unrepresentable=UnrepresentablePolicy.SKIP),
     )
-    build(config)
+    result = build(config)
+    before_dart = result.dart_path.read_bytes()
+    assert b"abstract final class TestIconsCatalog" in before_dart
     before = _tree(output)
 
     write_svg(inputs, "only.svg", UNREPRESENTABLE_SVG)
@@ -579,6 +736,7 @@ def test_all_skipped_batch_fails_atomically_and_preserves_last_good_output(
     }
     assert {diagnostic.details["action"] for diagnostic in caught.value.diagnostics} == {"skipped"}
     assert _tree(output) == before
+    assert result.dart_path.read_bytes() == before_dart
 
 
 def test_hard_security_failure_is_never_downgraded_to_skip(tmp_path, simple_svg: str) -> None:
@@ -983,3 +1141,271 @@ def test_aggregation_rejects_worker_source_mismatch(
 
     assert caught.value.diagnostic.code == "INTERNAL_WORKER_RESULT_INVALID"
     assert not output.exists()
+
+
+def test_catalog_is_opt_in_and_absent_by_default(tmp_path, simple_svg: str) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "icon.svg", simple_svg)
+
+    result = build(_config(inputs, output))
+
+    dart = result.dart_path.read_text(encoding="utf-8")
+    assert "abstract final class TestIconsCatalog" not in dart
+    report = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert report["dart"] == {
+        "className": "TestIcons",
+        "file": "test_icons.dart",
+        "fontPackage": None,
+    }
+
+
+def test_catalog_emits_same_file_name_map_in_codepoint_order(tmp_path, simple_svg: str) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "zebra.svg", simple_svg)
+    write_svg(inputs, "alpha.svg", simple_svg)
+    config = _config(
+        inputs,
+        output,
+        catalog=True,
+        icons={
+            "alpha.svg": IconOverride(name="zebra"),
+            "zebra.svg": IconOverride(name="alpha"),
+        },
+    )
+
+    result = build(config)
+
+    dart = result.dart_path.read_text(encoding="utf-8")
+    assert dart.startswith("// GENERATED CODE - DO NOT MODIFY BY HAND.")
+    assert dart.count("@flutter.staticIconProvider") == 2
+    assert "@flutter.staticIconProvider\nabstract final class TestIconsCatalog {" in dart
+    assert "abstract final class TestIconsCatalog {" in dart
+    assert "static const Map<String, flutter.IconData> byName =" in dart
+    assert "Generating or importing this companion does not retain glyphs by itself." in dart
+    assert "Retaining or enumerating [byName] keeps every base-font glyph, but not" in dart
+    assert "Use individual provider constants when glyph-level subsetting matters." in dart
+    assert "Keep the literal expanded for Dart 3.0-3.6 formatters." in dart
+    assert "layeredByName" not in dart
+    catalog = dart.split("abstract final class TestIconsCatalog {", 1)[1]
+
+    codepoints = _codepoints(output)
+    ordered_names = [
+        line.strip().split("'")[1] for line in catalog.splitlines() if line.strip().startswith("'")
+    ]
+    assert ordered_names == ["zebra", "alpha"]
+    assert ordered_names != sorted(ordered_names)
+    assert codepoints["alpha.svg"] < codepoints["zebra.svg"]
+
+    report = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert report["dart"] == {
+        "className": "TestIcons",
+        "file": "test_icons.dart",
+        "fontPackage": None,
+    }
+    assert build(config, check=True).checked
+
+
+def test_catalog_flag_changes_only_the_existing_dart_artifact(tmp_path, simple_svg: str) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "alpha.svg", simple_svg)
+    write_svg(inputs, "beta.svg", simple_svg)
+    without_catalog = _config(inputs, output)
+
+    first = build(without_catalog)
+    assert build(without_catalog, check=True).checked
+    first_tree = _tree(output)
+    first_report = first.report_path.read_bytes()
+
+    with_catalog = replace(without_catalog, catalog=True).validated()
+    second = build(with_catalog)
+    assert build(with_catalog, check=True).checked
+    second_tree = _tree(output)
+
+    assert first_tree.keys() == second_tree.keys()
+    assert first_report == second.report_path.read_bytes()
+    assert {path for path in first_tree if first_tree[path] != second_tree[path]} == {
+        "test_icons.dart"
+    }
+
+
+def test_catalog_toggle_is_detected_as_dart_artifact_drift(tmp_path, simple_svg: str) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "icon.svg", simple_svg)
+    build(_config(inputs, output, catalog=True))
+
+    with pytest.raises(IconFontError) as caught:
+        build(_config(inputs, output), check=True)
+
+    assert caught.value.diagnostic.code == "OUTPUT_OUT_OF_DATE"
+    assert caught.value.diagnostic.details == {
+        "missing": [],
+        "extra": [],
+        "changed": ["test_icons.dart"],
+    }
+
+
+def test_catalog_region_corruption_is_detected_as_dart_artifact_drift(
+    tmp_path, simple_svg: str
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "icon.svg", simple_svg)
+    config = _config(inputs, output, catalog=True)
+    result = build(config)
+    original = result.dart_path.read_text(encoding="utf-8")
+    catalog_entry = "'icon': TestIcons.icon,"
+    assert original.count(catalog_entry) == 1
+    result.dart_path.write_text(
+        original.replace(catalog_entry, "'corrupted': TestIcons.icon,"),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(IconFontError) as caught:
+        build(config, check=True)
+
+    assert caught.value.diagnostic.code == "OUTPUT_OUT_OF_DATE"
+    assert caught.value.diagnostic.details == {
+        "missing": [],
+        "extra": [],
+        "changed": ["test_icons.dart"],
+    }
+
+
+def test_catalog_contains_only_successfully_emitted_glyphs(tmp_path, simple_svg: str) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "good.svg", simple_svg)
+    write_svg(inputs, "unsupported.svg", UNREPRESENTABLE_SVG)
+    config = _config(
+        inputs,
+        output,
+        catalog=True,
+        jobs=1,
+        policy=ConversionPolicy(unrepresentable=UnrepresentablePolicy.SKIP),
+    )
+
+    result = build(config)
+
+    dart = result.dart_path.read_text(encoding="utf-8")
+    catalog = dart.split("abstract final class TestIconsCatalog {", 1)[1]
+    assert "'good': TestIcons.good," in catalog
+    assert "unsupported" not in catalog
+    report = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert [glyph["name"] for glyph in report["glyphs"]] == ["good"]
+    assert [icon["name"] for icon in report["skippedIcons"]] == ["unsupported"]
+
+
+def test_catalog_uses_scoped_dart_format_markers(tmp_path, simple_svg: str) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    write_svg(inputs, "icon.svg", simple_svg)
+    config = _config(inputs, output, catalog=True)
+
+    result = build(config)
+
+    lines = result.dart_path.read_text(encoding="utf-8").splitlines()
+    off = lines.index("// dart format off")
+    catalog = lines.index("abstract final class TestIconsCatalog {")
+    on = lines.index("// dart format on")
+    assert off < catalog < on
+    assert lines.index("@flutter.staticIconProvider") < off
+    assert lines[catalog - 1] == "@flutter.staticIconProvider"
+
+
+def test_catalog_tracks_a_large_icon_pack_lifecycle_without_manual_edits(
+    tmp_path,
+) -> None:
+    inputs = tmp_path / "icons"
+    output = tmp_path / "generated"
+    source_contents = {
+        f"icon_{index:03d}.svg": (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            f"<!-- synthetic icon {index} -->"
+            '<path d="M2 2h20v20H2z"/></svg>'
+        )
+        for index in range(174)
+    }
+    for source, content in tuple(source_contents.items())[:168]:
+        write_svg(inputs, source, content)
+    config = _config(inputs, output, catalog=True, jobs=1)
+
+    def assert_phase(
+        phase_config: BuildConfig,
+        *,
+        glyph_count: int,
+        retired_count: int,
+    ) -> tuple[dict[str, tuple[str, str]], dict]:
+        result = build(phase_config)
+        assert build(phase_config, check=True).checked
+        report = json.loads(result.report_path.read_text(encoding="utf-8"))
+        dart = result.dart_path.read_text(encoding="utf-8")
+        base_map = dart.split(
+            "static const Map<String, flutter.IconData> byName =",
+            1,
+        )[1].split("  };", 1)[0]
+        catalog_names = [
+            line.strip().split("'")[1]
+            for line in base_map.splitlines()
+            if line.strip().startswith("'")
+        ]
+        glyphs = {
+            glyph["source"]: (glyph["name"], glyph["codepoint"]) for glyph in report["glyphs"]
+        }
+
+        assert result.glyph_count == glyph_count
+        assert report["discoveredIconCount"] == glyph_count
+        assert report["glyphCount"] == glyph_count
+        assert len(report["glyphs"]) == glyph_count
+        assert report["retiredCodepointCount"] == retired_count
+        assert len(catalog_names) == glyph_count
+        assert set(catalog_names) == {name for name, _ in glyphs.values()}
+        return glyphs, _lock(output)
+
+    initial, _ = assert_phase(config, glyph_count=168, retired_count=0)
+
+    for source, content in tuple(source_contents.items())[168:]:
+        write_svg(inputs, source, content)
+    expanded, _ = assert_phase(config, glyph_count=174, retired_count=0)
+    assert {source: expanded[source][1] for source in initial} == {
+        source: initial[source][1] for source in initial
+    }
+
+    removed_sources = ("icon_020.svg", "icon_021.svg")
+    removed_codepoints = {source: expanded[source][1] for source in removed_sources}
+    for source in removed_sources:
+        (inputs / source).unlink()
+    reduced, reduced_lock = assert_phase(config, glyph_count=172, retired_count=2)
+    assert set(removed_sources).isdisjoint(reduced)
+    assert {
+        glyph["source"]: glyph["codepoint"] for glyph in reduced_lock["retired"]
+    } == removed_codepoints
+
+    old_source = "icon_010.svg"
+    new_source = "renamed/icon_010.svg"
+    old_name, old_codepoint = reduced[old_source]
+    renamed_path = inputs / new_source
+    renamed_path.parent.mkdir()
+    (inputs / old_source).rename(renamed_path)
+    source_renamed, _ = assert_phase(config, glyph_count=172, retired_count=2)
+    assert old_source not in source_renamed
+    assert source_renamed[new_source] == (old_name, old_codepoint)
+
+    overridden_source = "icon_011.svg"
+    old_override_codepoint = source_renamed[overridden_source][1]
+    renamed_api_config = replace(
+        config,
+        icons={overridden_source: IconOverride(name="renamedEleven")},
+    ).validated()
+    api_renamed, _ = assert_phase(
+        renamed_api_config,
+        glyph_count=172,
+        retired_count=2,
+    )
+    assert api_renamed[overridden_source] == (
+        "renamedEleven",
+        old_override_codepoint,
+    )

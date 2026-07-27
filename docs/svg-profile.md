@@ -319,14 +319,20 @@ input root, or output path when a narrower SVG source does not exist. Batch
 compilation collects diagnostics in deterministic source order within its
 resource budget.
 
-Successful JSON CLI payloads and deterministic build reports use schema version
-2. They include the selected policy, overall quality, lossless, approximated,
-and skipped counts, plus typed issue records. Reports include one aggregate
-issue list, attach lossy issues to the emitted glyph, attach unrepresentable
-issues to `skippedIcons`, and record every configured text font by family and
-SHA-256 without embedding machine-local font paths. Layered builds also record
-each auxiliary font and every per-glyph layer's paint order, exact opacity,
-family, file, unchanged codepoint, and font bounds. Report quality is:
+Successful JSON CLI payloads use schema version 2 and deterministic build
+reports use schema version 3. They include the selected policy, overall
+quality, lossless, approximated, and skipped counts, plus typed issue records.
+Report v3 also records `codepointsRemaining` and `rangeUtilization` for the
+configured allocation window. At or above 80% utilization, build and check
+emit `CODEPOINT_RANGE_NEAR_EXHAUSTION` without changing the successful exit
+status. This operational warning is separate from fidelity issues.
+
+Reports include one aggregate issue list, attach lossy issues to the emitted
+glyph, attach unrepresentable issues to `skippedIcons`, and record every
+configured text font by family and SHA-256 without embedding machine-local
+font paths. Layered builds also record each auxiliary font and every per-glyph
+layer's paint order, exact opacity, family, file, unchanged codepoint, and font
+bounds. Report quality is:
 
 - `lossless` when every emitted glyph is lossless and nothing is skipped
 - `approximated` when one or more emitted glyphs used an authorized lossy rule

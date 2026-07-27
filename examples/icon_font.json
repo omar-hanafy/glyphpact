@@ -4,6 +4,7 @@
   "output": "generated/app_icons",
   "fontFamily": "AppIcons",
   "className": "AppIcons",
+  "catalog": true,
   "fontPackage": null,
   "startCodepoint": "0xE000",
   "unitsPerEm": 1000,

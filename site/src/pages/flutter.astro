@@ -67,6 +67,19 @@ ExcludeSemantics(
   child: Icon(AppIcons.verified),
 )`;
 
+const catalogConfig = `{
+  "catalog": true
+}`;
+
+const catalogUsage = `for (final entry in AppIconsCatalog.byName.entries) {
+  gallery.add(
+    IconCard(name: entry.key, icon: entry.value),
+  );
+}`;
+
+const reportCodepoint = `final raw = reportGlyph['codepoint'] as String; // "0xE000"
+final codepoint = int.parse(raw.substring(2), radix: 16);`;
+
 const packageCmd = `glyphpact assets/icons \\
   --output lib/generated/app_icons \\
   --name AppIcons \\
@@ -108,6 +121,7 @@ const config = `{
   "output": "lib/generated/app_icons",
   "fontFamily": "AppIcons",
   "className": "AppIcons",
+  "catalog": true,
   "fontPackage": null,
   "startCodepoint": "0xE000",
   "unitsPerEm": 1000,
@@ -258,20 +272,63 @@ const flutterFlow = [
       </div>
     </section>
 
+    <section class="gp-section" aria-labelledby="catalog">
+      <div class="gp-shell gp-prose">
+        <h2 id="catalog">Enumerate the generated API without maintaining a second list</h2>
+        <p>
+          Set <code>catalog</code> in the checked-in config when a gallery,
+          picker, or coverage test needs every icon by its Dart name.
+          GlyphPact adds a separate <code>AppIconsCatalog</code> companion to
+          the existing generated Dart file.
+        </p>
+      </div>
+      <div class="gp-shell gp-layered">
+        <CodeBlock title="icon_font.json" copy={catalogConfig}>{catalogConfig}</CodeBlock>
+        <CodeBlock title="dart" copy={catalogUsage}>{catalogUsage}</CodeBlock>
+      </div>
+      <div class="gp-shell gp-prose" style="margin-block-start: 1.5rem">
+        <p>
+          <code>AppIconsCatalog.byName</code> is a static const map containing
+          every base glyph in ascending codepoint order. Packs containing
+          partial-alpha icons also receive <code>layeredByName</code>, which
+          contains only their lossless layered descriptors. Their static-const
+          descriptor provider is annotated separately so a direct reference to
+          one layered icon does not retain its siblings.
+        </p>
+        <p>
+          Generated regions whose cross-version layout differs remain stable
+          under <code>dart format</code>. The narrow controls cover the catalog,
+          layered descriptors, and an over-width base provider when needed.
+          Dart 3.0 through 3.6 formatters ignore them but receive
+          legacy-canonical layout; Dart 3.7 and later honor them.
+        </p>
+      </div>
+    </section>
+
     <section class="gp-section" aria-labelledby="treeshaking">
       <div class="gp-shell gp-prose">
         <h2 id="treeshaking">Tree shaking, precisely</h2>
         <p>
-          The provider is emitted the way Flutter's icon subsetting requires: an
-          <code>abstract final class</code> annotated
-          <code>@flutter.staticIconProvider</code>, containing only
-          <code>const IconData</code> values whose codepoint, family, and package
-          are compile-time constants.
+          The base provider is emitted the way Flutter's icon subsetting
+          requires: an <code>abstract final class</code> annotated
+          <code>@flutter.staticIconProvider</code> with only static const
+          members. Partial-alpha packs apply the same annotation to their
+          static-const descriptor provider. The catalog companion also has only
+          static const members and carries the provider annotation so
+          unreachable catalog declarations are ignored.
         </p>
         <p>
-          That annotation is a promise the analyzer enforces, namely that no
-          <code>IconData</code> in the class is constructed dynamically. Flutter
-          needs that guarantee before it can drop unused glyphs from the font.
+          The optional catalog remains outside the base provider namespace.
+          Its annotation suppresses declaration-only constants, but reachable
+          map values remain visible to Flutter. Enabling it does not itself
+          enlarge a release: when the catalog is unreachable, Flutter removes
+          it and subsets from the individual provider constants used by the app.
+        </p>
+        <p>
+          Making <code>byName</code> reachable retains every base glyph.
+          Making <code>layeredByName</code> reachable retains those icons'
+          fallbacks and layer-font glyphs. A catalog imported only by tests has
+          no release cost.
         </p>
         <p class="gp-note">
           <strong>What GlyphPact does and does not control.</strong> It emits a
@@ -384,6 +441,40 @@ const flutterFlow = [
       </div>
     </section>
 
+    <section class="gp-section" aria-labelledby="report-codegen">
+      <div class="gp-shell gp-prose">
+        <h2 id="report-codegen">Use the report for a different generated shape</h2>
+        <p>
+          The built-in catalog is the standard Dart enumeration API. Report
+          schema v3 is the stable lower-level input for another collection,
+          order, variable name, or language. It records the font and Dart
+          provider fields plus every emitted glyph's source, Dart name,
+          codepoint, directionality, and layered metadata. It also records
+          <code>{capacity.remainingField}</code> and
+          <code>{capacity.utilizationField}</code> for allocation planning.
+          The schema still validates historical v1 and v2 reports, but a custom
+          generator must recognize v3 before upgrading to GlyphPact 1.1.
+        </p>
+        <p>
+          Check <code>schemaVersion</code> before generating. Report codepoints
+          are <code>0x...</code> strings. Parse them only in build-time
+          generators and artifact tests; generated Dart should reference the
+          reported provider constants instead of constructing
+          <code>IconData</code> dynamically.
+        </p>
+      </div>
+      <div class="gp-shell" style="max-width: 46rem; margin-block-start: 1.5rem">
+        <CodeBlock title="dart" copy={reportCodepoint}>{reportCodepoint}</CodeBlock>
+      </div>
+      <div class="gp-shell gp-prose" style="margin-block-start: 1.25rem">
+        <p>
+          GlyphPact owns the entire configured output directory. Write custom
+          generated files elsewhere, run that generator after GlyphPact, and
+          give it its own non-rewriting drift check.
+        </p>
+      </div>
+    </section>
+
     <section class="gp-section" aria-labelledby="ci">
       <div class="gp-shell gp-prose">
         <h2 id="ci">Make CI fail when the committed font goes stale</h2>
@@ -420,6 +511,13 @@ const flutterFlow = [
           area <code>{capacity.bmpRange}</code> provides
           {' '}{capacity.bmpSlots} lifetime slots, and tombstones consume them
           too because codepoints are never recycled.
+        </p>
+        <p>
+          Report schema v3 exposes <code>{capacity.remainingField}</code> and
+          <code>{capacity.utilizationField}</code>. At or above
+          {' '}{capacity.warningThreshold} utilization, build and check emit
+          <code>CODEPOINT_RANGE_NEAR_EXHAUSTION</code> while still succeeding,
+          giving CI time to plan a new stable shard before allocation stops.
         </p>
         <p>
           For a larger catalogue, allocate from a supplementary private use area

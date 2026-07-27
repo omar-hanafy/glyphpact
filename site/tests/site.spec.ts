@@ -61,21 +61,39 @@ test('public install guidance uses PyPI and pins only CI', async ({ page }) => {
   );
 
   await page.goto('/glyphpact/flutter/');
-  await expect(page.locator('body')).toContainText('uv tool install glyphpact==1.0.1');
+  await expect(page.locator('body')).toContainText('uv tool install glyphpact==1.1.0');
   await expect(page.locator('body')).not.toContainText('uv tool install git+');
 });
 
-test('machine-readable release facts match v1.0.1', async ({ page }) => {
+test('machine-readable release facts match v1.1.0', async ({ page }) => {
   await page.goto('/glyphpact/llms.txt');
-  await expect(page.locator('body')).toContainText('Current release: v1.0.1');
+  await expect(page.locator('body')).toContainText('Current release: v1.1.0');
   await expect(page.locator('body')).toContainText('uv tool install glyphpact');
   await expect(page.locator('body')).not.toContainText('uv tool install git+');
 
   await page.goto('/glyphpact/');
+  const reportArtifact = page
+    .locator('.gp-tree__row')
+    .filter({ hasText: 'iconfont.report.json' });
+  await expect(reportArtifact).toContainText('Schema version 3');
   const schemas = await page
     .locator('script[type="application/ld+json"]')
     .evaluateAll((nodes) => nodes.map((node) => JSON.parse(node.textContent ?? '{}')));
-  expect(JSON.stringify(schemas)).toContain('"softwareVersion":"1.0.1"');
+  expect(JSON.stringify(schemas)).toContain('"softwareVersion":"1.1.0"');
+});
+
+test('Flutter guide exposes catalog reachability and report codegen boundaries', async ({
+  page,
+}) => {
+  await page.goto('/glyphpact/flutter/');
+  const body = page.locator('body');
+  await expect(body).toContainText('AppIconsCatalog.byName');
+  await expect(body).toContainText('when the catalog is unreachable');
+  await expect(body).toContainText('Report codepoints are 0x... strings');
+  await expect(body).toContainText('codepointsRemaining');
+  await expect(body).toContainText('rangeUtilization');
+  await expect(body).toContainText('CODEPOINT_RANGE_NEAR_EXHAUSTION');
+  await expect(body).toContainText('Write custom generated files elsewhere');
 });
 
 test('donation link is explicit without an embedded solicitation', async ({ page }) => {
@@ -164,7 +182,7 @@ test('MCP guide documents the portable server without leaking plugin-cache paths
   const manualCode = await page
     .locator('.gp-mcp-clients pre')
     .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? '').join('\n'));
-  expect(manualCode).toContain('glyphpact[mcp]==1.0.1');
+  expect(manualCode).toContain('glyphpact[mcp]==1.1.0');
   expect(manualCode).toContain('"type": "stdio"');
   expect(manualCode).toContain('"servers"');
   expect(manualCode).toContain('"context_servers"');
@@ -202,7 +220,7 @@ test('every JSON client uses the same pinned GlyphPact stdio launcher', async ({
     '--no-config',
     '--isolated',
     '--from',
-    'glyphpact[mcp]==1.0.1',
+    'glyphpact[mcp]==1.1.0',
     'glyphpact-mcp',
   ];
 

@@ -123,7 +123,7 @@ For a new integration:
 2. Keep the generated directory exclusive to GlyphPact.
 3. Build only after the audit and policy decisions are settled.
 4. Confirm the report counts, quality, issues, font digest, provider path, and
-   lock path.
+   lock path, plus remaining codepoints and range utilization.
 5. Use `read_icon_report` in bounded pages for the published glyphs, skipped
    sources, and diagnostic set.
 6. Run `check_icon_font` and require a clean result.
@@ -168,6 +168,8 @@ Report:
 - each approximation and omission plus its explicit approval state
 - every excluded source and required user action
 - codepoint and public API compatibility
+- remaining codepoint capacity, range utilization, and any near-exhaustion
+  warning
 - exact config, provider, font, lock, report, and attribution paths
 - analyzer, build, launch, and visual checks actually completed
 

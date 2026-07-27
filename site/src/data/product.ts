@@ -1,11 +1,9 @@
 /**
  * Verified product facts.
  *
- * Everything in this file was taken from GlyphPact v1.0.0 by running it, not
- * from documentation alone. The lock diff, the artifact tree, the diagnostic
- * codes, and the policy outcomes below are all real output from real builds of
- * a real icon pack. Where a value came from an observed run rather than a
- * document, the comment says so.
+ * These facts are checked against the current GlyphPact source, schemas, and
+ * integration tests rather than copied from marketing prose. Historical
+ * observed fixtures identify the exact release that produced them.
  */
 
 /* ------------------------------------------------------- generated output */
@@ -36,7 +34,7 @@ export const artifacts: Artifact[] = [
   },
   {
     path: 'app_icons.dart',
-    note: 'const Flutter IconData provider. Dart-specific.',
+    note: 'const Flutter IconData provider and optional name-keyed catalog. Dart-specific.',
     scope: 'flutter',
   },
   {
@@ -46,7 +44,7 @@ export const artifacts: Artifact[] = [
   },
   {
     path: 'iconfont.report.json',
-    note: 'Deterministic build report. Schema version 2.',
+    note: 'Deterministic build report and stable code-generation input. Schema version 3.',
     scope: 'meta',
   },
   {
@@ -266,6 +264,9 @@ export const capacity = {
   bmpSlots: '6,400',
   supplementarySlots: '65,534',
   supplementaryFlag: '--start-codepoint 0xF0000',
+  warningThreshold: '80%',
+  remainingField: 'codepointsRemaining',
+  utilizationField: 'rangeUtilization',
 };
 
 /* -------------------------------------------------------- agent workflow */
@@ -305,5 +306,5 @@ export const mcpResources = [
 export const requirements = {
   python: 'Python 3.10 or newer',
   dart: 'Dart 3 or newer, to consume the generated provider',
-  schemas: 'Result and report payloads use schema version 2; the lock uses schema version 1',
+  schemas: 'CLI results use schema version 2, reports use schema version 3, and locks use schema version 1',
 };

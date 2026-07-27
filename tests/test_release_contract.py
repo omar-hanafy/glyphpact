@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from inspect import Parameter, signature
 from io import BytesIO
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from conftest import write_svg
 from fontTools.ttLib import TTFont
 
 from glyphpact import __version__
-from glyphpact.builder import build
+from glyphpact.builder import BuildResult, build
 from glyphpact.config import (
     BuildConfig,
     ConversionPolicy,
@@ -73,7 +74,96 @@ def test_release_versions_and_generated_surfaces_agree(tmp_path: Path) -> None:
     assert report["generatorVersion"] == __version__
     assert lock["generator"] == "glyphpact"
     assert report["generator"] == "glyphpact"
+    assert report["schemaVersion"] == 3
+    assert report["codepointsRemaining"] == 6_399
+    assert report["rangeUtilization"] == 1 / 6_400
     assert f"GlyphPact {__version__}" in dart
+
+
+def test_catalog_is_keyword_only_without_changing_public_positional_contract() -> None:
+    legacy_fields = (
+        "input_path",
+        "output_dir",
+        "font_family",
+        "class_name",
+        "font_package",
+        "start_codepoint",
+        "units_per_em",
+        "precision",
+        "padding",
+        "clip_to_viewbox",
+        "policy",
+        "max_file_bytes",
+        "max_total_input_bytes",
+        "max_icons",
+        "max_discovery_entries",
+        "max_elements",
+        "max_expanded_elements",
+        "max_expanded_bytes",
+        "max_path_commands",
+        "max_total_path_commands",
+        "jobs",
+        "font_file",
+        "dart_file",
+        "lock_file",
+        "report_file",
+        "copyright",
+        "text_fonts",
+        "icons",
+    )
+    parameters = signature(BuildConfig).parameters
+
+    assert (
+        tuple(
+            name
+            for name, parameter in parameters.items()
+            if parameter.kind is Parameter.POSITIONAL_OR_KEYWORD
+        )
+        == legacy_fields
+    )
+    assert parameters["catalog"].kind is Parameter.KEYWORD_ONLY
+    assert parameters["catalog"].default is False
+    assert BuildConfig.__match_args__ == legacy_fields
+
+
+def test_build_result_public_shape_has_no_catalog_artifact_and_exposes_capacity() -> None:
+    assert tuple(BuildResult.__dataclass_fields__) == (
+        "output_dir",
+        "font_path",
+        "dart_path",
+        "lock_path",
+        "report_path",
+        "layer_font_paths",
+        "glyph_count",
+        "discovered_icon_count",
+        "lossless_glyph_count",
+        "approximated_glyph_count",
+        "skipped_icon_count",
+        "issues",
+        "policy",
+        "font_sha256",
+        "checked",
+        "codepoints_remaining",
+        "range_utilization",
+        "warnings",
+    )
+    assert BuildResult.__match_args__ == (
+        "output_dir",
+        "font_path",
+        "dart_path",
+        "lock_path",
+        "report_path",
+        "layer_font_paths",
+        "glyph_count",
+        "discovered_icon_count",
+        "lossless_glyph_count",
+        "approximated_glyph_count",
+        "skipped_icon_count",
+        "issues",
+        "policy",
+        "font_sha256",
+        "checked",
+    )
 
 
 def test_support_url_is_consistent_across_passive_public_surfaces() -> None:
@@ -99,6 +189,29 @@ def test_release_publication_is_tag_only_and_default_branch_contained() -> None:
     assert 'git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${DEFAULT_BRANCH}"' in workflow
     assert "github.event_name == 'push' && github.ref_type == 'tag'" in workflow
     assert "attestations: true" in workflow
+
+
+def test_site_publication_waits_for_the_package_release() -> None:
+    project = Path(__file__).parents[1]
+    pages_workflow = (project / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+
+    assert 'tags: ["v*"]' not in pages_workflow
+    assert 'workflows: ["Release"]' in pages_workflow
+    assert "github.event.workflow_run.head_sha" in pages_workflow
+    assert '"${WORKFLOW_CONCLUSION}" = "success"' in pages_workflow
+    assert '"${TAG_SHA}" = "${WORKFLOW_HEAD_SHA}"' in pages_workflow
+    assert "https://pypi.org/pypi/glyphpact/${VERSION}/json" in pages_workflow
+
+
+def test_required_flutter_context_aggregates_formatter_compatibility() -> None:
+    project = Path(__file__).parents[1]
+    workflow = (project / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    assert "flutter-integration:" in workflow
+    assert "name: flutter" in workflow
+    assert "needs: [flutter-integration, dart-format]" in workflow
+    assert 'test "${FLUTTER_INTEGRATION_RESULT}" = "success"' in workflow
+    assert 'test "${DART_FORMAT_RESULT}" = "success"' in workflow
 
 
 def test_uv_and_release_tool_versions_are_pinned() -> None:

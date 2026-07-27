@@ -7,12 +7,18 @@ import re
 from collections import deque
 from collections.abc import Iterable, Iterator
 from concurrent.futures import Future, ProcessPoolExecutor
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .attribution import generate_attribution
-from .config import BuildConfig, ConversionPolicy, LossyPolicy, UnrepresentablePolicy
+from .config import (
+    BuildConfig,
+    ConversionPolicy,
+    LossyPolicy,
+    UnrepresentablePolicy,
+    private_use_range,
+)
 from .dart_generator import DartLayer, generate_dart
 from .discovery import SvgSource, discover_svg_sources
 from .errors import (
@@ -55,6 +61,11 @@ from .text_outliner import validate_text_fonts
 from .version import __version__
 
 _PATH_COMMAND = re.compile(r"[AaCcHhLlMmQqSsTtVvZz]")
+_CODEPOINT_RANGE_WARNING_NUMERATOR = 4
+_CODEPOINT_RANGE_WARNING_DENOMINATOR = 5
+_CODEPOINT_RANGE_WARNING_THRESHOLD = (
+    _CODEPOINT_RANGE_WARNING_NUMERATOR / _CODEPOINT_RANGE_WARNING_DENOMINATOR
+)
 
 
 @dataclass(frozen=True)
@@ -74,6 +85,9 @@ class BuildResult:
     policy: ConversionPolicy
     font_sha256: str
     checked: bool
+    codepoints_remaining: int = field(default=0, kw_only=True)
+    range_utilization: float = field(default=0.0, kw_only=True)
+    warnings: tuple[Diagnostic, ...] = field(default=(), kw_only=True)
 
     @property
     def quality(self) -> str:
@@ -82,6 +96,74 @@ class BuildResult:
         if self.approximated_glyph_count:
             return "approximated"
         return "lossless"
+
+
+@dataclass(frozen=True)
+class _CodepointCapacity:
+    start: int
+    end: int
+    capacity: int
+    consumed: int
+    remaining: int
+    utilization: float
+
+    @property
+    def warnings(self) -> tuple[Diagnostic, ...]:
+        if (
+            self.consumed * _CODEPOINT_RANGE_WARNING_DENOMINATOR
+            < self.capacity * _CODEPOINT_RANGE_WARNING_NUMERATOR
+        ):
+            return ()
+        noun = "codepoint" if self.remaining == 1 else "codepoints"
+        verb = "remains" if self.remaining == 1 else "remain"
+        return (
+            Diagnostic(
+                code="CODEPOINT_RANGE_NEAR_EXHAUSTION",
+                message=(
+                    f"{self.consumed:,} of {self.capacity:,} codepoints in the "
+                    "configured private-use allocation window are consumed "
+                    f"({self.utilization:.4%}); {self.remaining:,} {noun} {verb}."
+                ),
+                hint=(
+                    "Split the pack into another stable font family before this window "
+                    "is exhausted. Never recycle retired codepoints."
+                ),
+                details={
+                    "startCodepoint": format_codepoint(self.start),
+                    "endCodepoint": format_codepoint(self.end),
+                    "capacity": self.capacity,
+                    "consumed": self.consumed,
+                    "codepointsRemaining": self.remaining,
+                    "rangeUtilization": self.utilization,
+                    "threshold": _CODEPOINT_RANGE_WARNING_THRESHOLD,
+                },
+            ),
+        )
+
+
+def _codepoint_capacity(state: LockState, config: BuildConfig) -> _CodepointCapacity:
+    bounds = private_use_range(config.start_codepoint)
+    assert bounds is not None
+    end = bounds[1]
+    capacity = end - config.start_codepoint + 1
+    assignments = (*state.active, *state.retired)
+    if any(not config.start_codepoint <= glyph.codepoint <= end for glyph in assignments):
+        raise IconFontError(
+            "INTERNAL_CODEPOINT_RANGE_MISMATCH",
+            "The finalized lock contains a codepoint outside its allocation window.",
+            hint="Report this invariant failure. No output was published.",
+        )
+    consumed = len(assignments)
+    remaining = capacity - consumed
+    utilization = consumed / capacity
+    return _CodepointCapacity(
+        start=config.start_codepoint,
+        end=end,
+        capacity=capacity,
+        consumed=consumed,
+        remaining=remaining,
+        utilization=utilization,
+    )
 
 
 @dataclass(frozen=True)
@@ -776,6 +858,7 @@ def _report(
     layer_fonts: tuple[_LayerFont, ...],
     state: LockState,
     config: BuildConfig,
+    capacity: _CodepointCapacity,
 ) -> bytes:
     font_by_source = {glyph.source: glyph for glyph in font.glyphs}
     layer_font_by_source = {
@@ -867,7 +950,7 @@ def _report(
     )
     quality = "partial" if skipped else "approximated" if approximated_count else "lossless"
     payload = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "generator": GENERATOR_ID,
         "generatorVersion": __version__,
         "status": "success",
@@ -884,6 +967,8 @@ def _report(
         "issueCount": len(all_issues),
         "issues": [issue.to_dict() for issue in all_issues],
         "retiredCodepointCount": len(state.retired),
+        "codepointsRemaining": capacity.remaining,
+        "rangeUtilization": capacity.utilization,
         "textFonts": [
             {"family": family, "sha256": text_font.sha256}
             for family, text_font in sorted(
@@ -939,6 +1024,7 @@ def _artifacts(
     font: FontArtifact,
     layer_fonts: tuple[_LayerFont, ...],
     config: BuildConfig,
+    capacity: _CodepointCapacity,
 ) -> dict[PurePosixPath, bytes]:
     assert config.font_file is not None
     assert config.dart_file is not None
@@ -952,7 +1038,15 @@ def _artifacts(
             layers_by_source=_dart_layers(compiled, layer_fonts),
         ),
         config.lock_file: lock_json(state, config),
-        config.report_file: _report(compiled, skipped, font, layer_fonts, state, config),
+        config.report_file: _report(
+            compiled,
+            skipped,
+            font,
+            layer_fonts,
+            state,
+            config,
+            capacity,
+        ),
         **{layer_font.file: layer_font.font.data for layer_font in layer_fonts},
     }
     if len(artifacts) != 6 + len(layer_fonts):
@@ -1014,7 +1108,11 @@ def _build_locked(
             + ", ".join(repr(source) for source in unknown_overrides),
             hint="Override keys are case-sensitive paths relative to the input directory.",
         )
-    previous = load_lock(lock_path) if owned_output else LockState()
+    previous = (
+        load_lock(lock_path, expected_start_codepoint=config.start_codepoint)
+        if owned_output
+        else LockState()
+    )
     assigned = assign_glyphs(sources, previous, config)
     compiled, skipped, assigned = _compile_all(sources, assigned, config)
     font = build_font(
@@ -1022,7 +1120,16 @@ def _build_locked(
         config,
     )
     layer_fonts = _build_layer_fonts(compiled, config)
-    artifacts = _artifacts(compiled, skipped, assigned, font, layer_fonts, config)
+    capacity = _codepoint_capacity(assigned, config)
+    artifacts = _artifacts(
+        compiled,
+        skipped,
+        assigned,
+        font,
+        layer_fonts,
+        config,
+        capacity,
+    )
     if check:
         compare_artifacts(config.output_dir, artifacts)
     else:
@@ -1060,4 +1167,7 @@ def _build_locked(
         policy=config.policy,
         font_sha256=font.sha256,
         checked=check,
+        codepoints_remaining=capacity.remaining,
+        range_utilization=capacity.utilization,
+        warnings=capacity.warnings,
     )

@@ -68,7 +68,8 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
-  flutter:
+  flutter-integration:
+    name: Flutter integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -79,12 +80,74 @@ jobs:
           enable-cache: true
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          channel: stable
+          flutter-version: "3.44.8"
           cache: true
       - run: uv sync --locked --all-groups --all-extras
       - run: uv run pytest tests/test_flutter_integration.py
         env:
           RUN_FLUTTER_TESTS: "1"
+
+  dart-format:
+    name: Dart ${{ matrix.dart }} format (language ${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flutter: "3.10.0"
+            dart: "3.0"
+            language: "3.0"
+            marker_supported: "0"
+          - flutter: "3.27.0"
+            dart: "3.6"
+            language: "3.6"
+            marker_supported: "0"
+          - flutter: "3.29.0"
+            dart: "3.7"
+            language: "3.7"
+            marker_supported: "1"
+          - flutter: "3.44.8"
+            dart: "3.12"
+            language: "3.0"
+            marker_supported: "0"
+          - flutter: "3.44.8"
+            dart: "3.12"
+            language: "3.7"
+            marker_supported: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.32"
+          python-version: "3.13"
+          enable-cache: true
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ matrix.flutter }}
+          cache: true
+      - run: uv sync --locked --all-groups --all-extras
+      - run: >-
+          uv run pytest
+          tests/test_flutter_integration.py::test_catalog_is_stable_across_supported_dart_formatters
+        env:
+          RUN_DART_FORMAT_TESTS: "1"
+          EXPECTED_DART_SERIES: ${{ matrix.dart }}
+          FORMATTER_LANGUAGE_VERSION: ${{ matrix.language }}
+          FORMATTER_MARKER_SUPPORTED: ${{ matrix.marker_supported }}
+
+  flutter:
+    name: flutter
+    if: ${{ always() }}
+    needs: [flutter-integration, dart-format]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Flutter integration and every Dart formatter gate
+        env:
+          FLUTTER_INTEGRATION_RESULT: ${{ needs['flutter-integration'].result }}
+          DART_FORMAT_RESULT: ${{ needs['dart-format'].result }}
+        run: |
+          test "${FLUTTER_INTEGRATION_RESULT}" = "success"
+          test "${DART_FORMAT_RESULT}" = "success"
 
   plugin:
     runs-on: ubuntu-latest

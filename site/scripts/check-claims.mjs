@@ -7,9 +7,11 @@
  *
  * Two kinds of check:
  *
- *  1. The advertised release version must correspond to a real git tag. This
- *     stops the site announcing a release that was never published, which is
- *     the most damaging inaccuracy it could carry.
+ *  1. The advertised release version must correspond to a real git tag. Pull
+ *     source previews may explicitly allow the package's unreleased version
+ *     when it also has a changelog entry. The Pages workflow separately
+ *     requires a successful Release run, exact tag SHA, and matching PyPI
+ *     version before deployment.
  *  2. Built HTML must not claim unsupported outputs. Some forbidden terms
  *     legitimately appear while *denying* support ("no WOFF2", "does not
  *     generate CSS"), so each match is checked against its surrounding
@@ -25,6 +27,8 @@ import { execSync } from 'node:child_process';
 const DIST = 'dist';
 const failures = [];
 const notes = [];
+const allowUnreleasedVersion =
+  process.env.GLYPHPACT_ALLOW_UNRELEASED_SITE_VERSION === '1';
 
 /* ------------------------------------------------- 1. version vs git tag */
 
@@ -45,11 +49,28 @@ if (!versionMatch) {
   if (tags) {
     const tagList = tags.split('\n').map((t) => t.trim()).filter(Boolean);
     if (!tagList.includes(`v${version}`)) {
-      failures.push(
-        `The site advertises v${version}, but no matching git tag "v${version}" exists. ` +
-          `Tags found: ${tagList.join(', ') || '(none)'}. ` +
-          'The site must only advertise a published release.',
-      );
+      if (allowUnreleasedVersion) {
+        const pyproject = readFileSync('../pyproject.toml', 'utf8');
+        const packageVersion = pyproject.match(/^version = "([^"]+)"$/m)?.[1];
+        const changelog = readFileSync('../CHANGELOG.md', 'utf8');
+        if (packageVersion !== version || !changelog.includes(`## ${version} -`)) {
+          failures.push(
+            `Unreleased site version v${version} must match pyproject.toml and ` +
+              'have a dated CHANGELOG.md entry.',
+          );
+        } else {
+          notes.push(
+            `Source preview v${version} matches the source package and changelog; ` +
+              'the production release tag is still required.',
+          );
+        }
+      } else {
+        failures.push(
+          `The site advertises v${version}, but no matching git tag "v${version}" exists. ` +
+            `Tags found: ${tagList.join(', ') || '(none)'}. ` +
+            'The site must only advertise a published release.',
+        );
+      }
     } else {
       notes.push(`Advertised release v${version} matches git tag v${version}.`);
     }

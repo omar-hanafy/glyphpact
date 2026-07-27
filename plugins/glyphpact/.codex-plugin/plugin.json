@@ -1,6 +1,6 @@
 {
   "name": "glyphpact",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Compile and verify large SVG sets as deterministic Flutter IconData fonts through a bundled GlyphPact MCP server and project integration skill.",
   "author": {
     "name": "Omar Hanafy",

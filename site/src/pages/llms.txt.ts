@@ -97,7 +97,9 @@ authoring the CSS yourself.
 - One font holds at most ${capacity.glyphCeiling} usable glyphs. The default BMP
   private use area ${capacity.bmpRange} provides ${capacity.bmpSlots} lifetime
   allocation slots; \`${capacity.supplementaryFlag}\` provides
-  ${capacity.supplementarySlots}.
+  ${capacity.supplementarySlots}. Report schema v3 exposes
+  \`${capacity.remainingField}\` and \`${capacity.utilizationField}\`; builds
+  warn at ${capacity.warningThreshold} utilization.
 - A local stdio MCP server exposes \`audit_icon_pack\`,
   \`build_icon_font\`, \`check_icon_font\`, and \`read_icon_report\`. Claude
   Code and Codex can install the full plugin; Antigravity, Cursor, JetBrains,

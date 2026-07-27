@@ -8,7 +8,7 @@ compiler through two surfaces:
 - the `sync-flutter-svg-icons` skill for project wiring, compatibility,
   diagnostics, and rendered Flutter verification
 
-The plugin bundles the exact `glyphpact` 1.0.1 wheel used by its MCP server.
+The plugin bundles the exact `glyphpact` 1.1.0 wheel used by its MCP server.
 It does not depend on a source checkout or a globally installed GlyphPact CLI.
 
 ## Requirements
@@ -72,8 +72,10 @@ The skill guides the agent through the complete project workflow:
 2. audit with strict defaults
 3. request an explicit policy decision for every approximation or omission
 4. build and check reproducibly
-5. wire exact font families and artifact paths
-6. analyze, build, launch, and visually compare the rendered glyphs
+5. use the optional same-file Dart catalog for runtime enumeration, or the
+   stable report contract for a custom generated shape
+6. wire exact font families and artifact paths
+7. analyze, build, launch, and visually compare the rendered glyphs
 
 ## Privacy and mutation boundary
 
@@ -95,9 +97,9 @@ artifact into the plugin:
 ```bash
 SOURCE_DATE_EPOCH=0 uv build --wheel --out-dir dist
 python plugins/glyphpact/scripts/sync_wheel.py \
-  dist/glyphpact-1.0.1-py3-none-any.whl
+  dist/glyphpact-1.1.0-py3-none-any.whl
 python plugins/glyphpact/scripts/sync_wheel.py --check \
-  dist/glyphpact-1.0.1-py3-none-any.whl
+  dist/glyphpact-1.1.0-py3-none-any.whl
 python plugins/glyphpact/scripts/verify_bundle.py
 python plugins/glyphpact/scripts/validate_plugin.py
 ```

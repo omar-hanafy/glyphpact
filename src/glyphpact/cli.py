@@ -59,6 +59,12 @@ def _parser() -> argparse.ArgumentParser:
         help="Clip painted geometry to the SVG viewBox (default: true)",
     )
     parser.add_argument(
+        "--catalog",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Emit a runtime name catalog in the generated Dart library (default: false)",
+    )
+    parser.add_argument(
         "--lossy",
         choices=tuple(policy.value for policy in LossyPolicy),
         help="Lossy SVG handling: error (default) or explicit convert",
@@ -110,6 +116,7 @@ def _resolve_config(args: argparse.Namespace) -> BuildConfig:
             jobs=args.jobs if args.jobs is not None else 0,
             padding=args.padding if args.padding is not None else 0.0,
             clip_to_viewbox=(args.clip_to_viewbox if args.clip_to_viewbox is not None else True),
+            catalog=args.catalog if args.catalog is not None else False,
             policy=ConversionPolicy(
                 lossy=LossyPolicy(args.lossy or LossyPolicy.ERROR.value),
                 unrepresentable=UnrepresentablePolicy(
@@ -138,6 +145,7 @@ def _resolve_config(args: argparse.Namespace) -> BuildConfig:
         clip_to_viewbox=(
             args.clip_to_viewbox if args.clip_to_viewbox is not None else config.clip_to_viewbox
         ),
+        catalog=args.catalog if args.catalog is not None else config.catalog,
         policy=ConversionPolicy(
             lossy=LossyPolicy(args.lossy) if args.lossy is not None else config.policy.lossy,
             unrepresentable=(
@@ -201,6 +209,11 @@ def _render_success(result: BuildResult) -> str:
     )
 
 
+def _emit_warnings(warnings: Sequence[Diagnostic]) -> None:
+    for warning in warnings:
+        print(warning.render(), file=sys.stderr)
+
+
 def _emit_errors(diagnostics: Sequence[Diagnostic], *, json_output: bool) -> bool:
     if json_output:
         try:
@@ -257,6 +270,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.error("--quiet and --json cannot be combined")
         config = _resolve_config(args)
         result = build(config, check=args.check, adopt_output=args.adopt_output)
+        _emit_warnings(result.warnings)
         if args.json:
             print(json.dumps(_result_dict(result), indent=2, allow_nan=False))
         elif not args.quiet:

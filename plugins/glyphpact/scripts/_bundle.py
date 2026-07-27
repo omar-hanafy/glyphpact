@@ -16,7 +16,7 @@ from email.parser import Parser
 from pathlib import Path, PurePosixPath
 
 EXPECTED_DISTRIBUTION = "glyphpact"
-EXPECTED_VERSION = "1.0.1"
+EXPECTED_VERSION = "1.1.0"
 EXPECTED_WHEEL_FILENAME = f"glyphpact-{EXPECTED_VERSION}-py3-none-any.whl"
 EXPECTED_CHECKSUM_FILENAME = f"{EXPECTED_WHEEL_FILENAME}.sha256"
 EXPECTED_MCP_REQUIREMENTS = (

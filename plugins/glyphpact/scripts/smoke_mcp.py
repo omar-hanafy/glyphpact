@@ -115,6 +115,47 @@ async def _smoke(root: Path) -> dict[str, Any]:
                     "timeout_seconds": 60,
                 },
             )
+            generated = Path(temporary) / "generated"
+            config = Path(temporary) / "icon_font.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "input": str(source),
+                        "output": str(generated),
+                        "fontFamily": "McpSmokeIcons",
+                        "className": "McpSmokeIcons",
+                        "dartFile": "mcp_smoke_icons.dart",
+                        "catalog": True,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            build_result = await session.call_tool(
+                "build_icon_font",
+                arguments={
+                    "config_path": str(config),
+                    "timeout_seconds": 60,
+                },
+            )
+            check_result = await session.call_tool(
+                "check_icon_font",
+                arguments={
+                    "config_path": str(config),
+                    "timeout_seconds": 60,
+                },
+            )
+            generated_dart = (generated / "mcp_smoke_icons.dart").read_text(encoding="utf-8")
+            generated_report = json.loads(
+                (generated / "iconfont.report.json").read_text(encoding="utf-8")
+            )
+            report_result = await session.call_tool(
+                "read_icon_report",
+                arguments={
+                    "report_path": str(generated / "iconfont.report.json"),
+                    "offset": 0,
+                    "limit": 1,
+                },
+            )
             unsafe = Path(temporary) / "unsafe"
             unsafe.mkdir()
             for index in range(2):
@@ -194,6 +235,43 @@ async def _smoke(root: Path) -> dict[str, Any]:
         )
     if audit_result.isError or not isinstance(audit_result.structuredContent, dict):
         raise BundleError("MCP single-SVG audit did not return structured success.")
+    if (
+        build_result.isError
+        or not isinstance(build_result.structuredContent, dict)
+        or build_result.structuredContent.get("ok") is not True
+        or build_result.structuredContent.get("state") != "success"
+    ):
+        raise BundleError("MCP catalog-enabled build did not return structured success.")
+    if (
+        check_result.isError
+        or not isinstance(check_result.structuredContent, dict)
+        or check_result.structuredContent.get("ok") is not True
+        or check_result.structuredContent.get("state") != "success"
+    ):
+        raise BundleError("MCP catalog-enabled check did not return structured success.")
+    if (
+        "abstract final class McpSmokeIconsCatalog" not in generated_dart
+        or "static const Map<String, flutter.IconData> byName" not in generated_dart
+    ):
+        raise BundleError("MCP catalog-enabled build did not emit the same-file catalog API.")
+    if set(generated_report.get("dart", {})) != {"className", "file", "fontPackage"}:
+        raise BundleError("MCP catalog-enabled build changed the stable report Dart contract.")
+    if (
+        generated_report.get("schemaVersion") != 3
+        or generated_report.get("codepointsRemaining") != 6_399
+        or generated_report.get("rangeUtilization") != 1 / 6_400
+    ):
+        raise BundleError("MCP build did not publish the report v3 capacity contract.")
+    if report_result.isError or not isinstance(report_result.structuredContent, dict):
+        raise BundleError("MCP report read did not return structured capacity evidence.")
+    report_summary = report_result.structuredContent.get("summary")
+    if (
+        not isinstance(report_summary, dict)
+        or report_summary.get("schemaVersion") != 3
+        or report_summary.get("codepointsRemaining") != 6_399
+        or report_summary.get("rangeUtilization") != 1 / 6_400
+    ):
+        raise BundleError("MCP report summary omitted the report v3 capacity metrics.")
     if initialization.serverInfo.version != EXPECTED_VERSION:
         raise BundleError(
             "MCP server version differs from the bundled GlyphPact release: "
@@ -270,6 +348,12 @@ async def _smoke(root: Path) -> dict[str, Any]:
             "quality": audit_payload["quality"],
             "findingCount": findings["total"],
             "temporaryArtifactsRemoved": True,
+        },
+        "catalogBuild": {
+            "built": True,
+            "checked": True,
+            "sameFileApi": True,
+            "stableReport": True,
         },
         "pagedFailureAudit": {
             "errorCount": failure_payload["errorCount"],
