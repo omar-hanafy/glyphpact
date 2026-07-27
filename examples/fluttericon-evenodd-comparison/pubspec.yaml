@@ -1,0 +1,36 @@
+name: glyphpact_comparison
+description: A visual comparison of FlutterIcon.com and GlyphPact output.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/glyphpact-icon.svg
+    - assets/source_svg/
+    - assets/fluttericon/config.json
+  fonts:
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist-Regular.ttf
+        - asset: assets/fonts/Geist-SemiBold.ttf
+          weight: 600
+    - family: FlutterIcon
+      fonts:
+        - asset: assets/fluttericon/fonts/FlutterIcon.ttf
+    - family: GlyphPactIcons
+      fonts:
+        - asset: lib/generated/glyphpact/fonts/GlyphPactIcons.otf

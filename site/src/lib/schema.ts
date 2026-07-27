@@ -55,6 +55,7 @@ export function softwareSchema(): Record<string, unknown> {
     },
     featureList: [
       'Stable codepoints across icon-pack changes via a committed lock file',
+      'Recursive bulk SVG folder compilation',
       'Validated OpenType/CFF font output',
       'const Flutter IconData provider generation',
       'Byte-identical deterministic rebuilds',
@@ -64,7 +65,7 @@ export function softwareSchema(): Record<string, unknown> {
       'Local stdio MCP server with a Claude Code and Codex plugin',
     ],
     keywords:
-      'svg to icon font, icon font generator, stable codepoints, flutter icon font, svg to otf, iconfont lock, deterministic build',
+      'bulk svg to flutter icons, svg folder to IconData, flutter icon font generator CLI, stable codepoints, offline icon font generator, svg auditing, deterministic build',
   };
 }
 

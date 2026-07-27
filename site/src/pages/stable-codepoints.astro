@@ -70,14 +70,53 @@ const ciYaml = `- name: Verify generated icon output is current
   <article>
     <header class="gp-shell gp-pagehead">
       <p class="gp-annotation">The problem, in detail</p>
-      <h1>Why icon-font codepoints change, and how to stop it</h1>
+      <h1>Add Flutter icons without changing existing codepoints</h1>
       <p class="gp-lede">
-        A generated icon font is an application-facing API. The codepoint behind
-        <code>AppIcons.back</code> is as much a contract as a method signature,
-        and it breaks the same way: quietly, at a distance, in code nobody
-        touched.
+        A common project starts with three icons from Figma, then grows to five,
+        ten, and one hundred. The codepoint behind <code>AppIcons.back</code>
+        must keep meaning the same glyph through every batch.
       </p>
     </header>
+
+    <section class="gp-section" aria-labelledby="figma-batches-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">The normal project lifecycle</p>
+          <h2 id="figma-batches-heading">When Figma sends 3 icons, then 5, 10, and 100</h2>
+          <p class="gp-lede">
+            Pack growth should append assignments, not recalculate the API your
+            widgets already use.
+          </p>
+        </div>
+
+        <ol class="gp-codepoint-growth" aria-label="Icon pack growth from three to one hundred icons">
+          <li><strong>3</strong><span>initial navigation icons</span></li>
+          <li><strong>5</strong><span>two states arrive</span></li>
+          <li><strong>10</strong><span>another Figma batch</span></li>
+          <li><strong>100</strong><span>the product expands</span></li>
+        </ol>
+
+        <div class="gp-prose" style="margin-block-start: 2rem">
+          <p>
+            With a committed lock, existing sources retain their assignments and
+            only new files receive unused values. A removed icon leaves a
+            tombstone. A unique content-preserving rename retains its identity.
+            If somebody forgets to regenerate after the next Figma export,
+            <code>--check</code> fails CI.
+          </p>
+          <p>
+            This progression describes the repeated-delivery workflow. The
+            verified lock diff later on this page remains a smaller two-to-six
+            fixture so every assignment is readable.
+          </p>
+          <p>
+            <a href={path(routes.bulk.href)}
+              >Convert the complete SVG folder with the bulk Flutter icon guide</a
+            >.
+          </p>
+        </div>
+      </div>
+    </section>
 
     <section class="gp-section" aria-labelledby="mechanism">
       <div class="gp-shell gp-prose">
@@ -85,9 +124,9 @@ const ciYaml = `- name: Verify generated icon output is current
         <p>
           Icon fonts place glyphs in a Unicode private use area, most often
           starting at <code>U+E000</code>. Somebody has to decide which icon
-          gets which value, and most generators decide it the simplest way
-          available: walk the current list of source files, hand out
-          consecutive codepoints, stop.
+          gets which value. A generator that derives assignments from the
+          current file list may walk the sources, hand out consecutive
+          codepoints, and stop.
         </p>
         <p>
           That makes the assignment a <em>function of the file list</em> rather
@@ -135,8 +174,9 @@ const ciYaml = `- name: Verify generated icon output is current
         <p>
           The same shift happens when a file is renamed, when a directory is
           reorganised, when an icon is deleted from the middle of a set, or when
-          a designer reorders a selection in a GUI. None of those are unusual
-          events. All of them silently rewrite the mapping.
+          a new GUI import starts without restoring its prior project or config.
+          None of those are unusual events. Under a list-derived scheme, each
+          one can rewrite the mapping.
         </p>
       </div>
     </section>
@@ -320,7 +360,7 @@ const ciYaml = `- name: Verify generated icon output is current
 
   <Faq page="codepoints" heading="Questions about codepoint stability" />
 
-  <NextLinks keys={['flutter', 'vsIcomoon']} />
+  <NextLinks keys={['bulk', 'flutter', 'vsIcomoon']} />
 </Base>
 
 <style>
@@ -342,5 +382,51 @@ const ciYaml = `- name: Verify generated icon output is current
 
   .gp-prose + .gp-narrow + .gp-prose > :global(*:first-child) {
     margin-block-start: 1.5rem;
+  }
+
+  .gp-codepoint-growth {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-block: 1px solid var(--rule);
+  }
+
+  .gp-codepoint-growth li {
+    padding: clamp(1rem, 3vw, 1.75rem);
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .gp-codepoint-growth li + li {
+    border-inline-start: 1px solid var(--rule);
+  }
+
+  .gp-codepoint-growth strong {
+    color: var(--accent);
+    font-family: var(--gp-font-mono);
+    font-size: clamp(1.8rem, 5vw, 3.8rem);
+    line-height: 1;
+  }
+
+  .gp-codepoint-growth span {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 40rem) {
+    .gp-codepoint-growth {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .gp-codepoint-growth li:nth-child(3) {
+      border-inline-start: 0;
+      border-block-start: 1px solid var(--rule);
+    }
+
+    .gp-codepoint-growth li:nth-child(4) {
+      border-block-start: 1px solid var(--rule);
+    }
   }
 </style>

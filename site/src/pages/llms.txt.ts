@@ -133,12 +133,16 @@ Comparison claims on this site were verified on ${VERIFIED_ON} against current
 first-party documentation, and each cell carries its source. Two points worth
 recording because they are commonly misstated:
 
-- IcoMoon processes artwork in the browser and does not upload SVGs on its free
-  plan. It preserves codepoints when a previously downloaded \`selection.json\`
-  is re-imported. It has no CLI.
+- The current IcoMoon app is an offline-first PWA that imports files and
+  folders, exports a Dart class for Flutter, and stores projects in
+  \`icomoon.json\`. Replace by Matching Names can retain glyph metadata.
+  Current first-party documentation does not describe a repository-native
+  stale-output command for CI.
 - FlutterIcon.com is a hosted Fontello fork whose \`config.json\` records glyph
   codes and can be re-imported. It bundles many open-source icon packs, which
-  GlyphPact does not.
+  GlyphPact does not. A third-party Fontello CLI path exists, but the site does
+  not document a first-party local compiler or repository-native staleness
+  check.
 
 GlyphPact's distinguishing properties are the committed registry, permanent
 tombstones, a CI staleness check, byte-identical rebuilds, and a published

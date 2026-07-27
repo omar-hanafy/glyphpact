@@ -85,9 +85,9 @@ abstract final class AppIcons {
   <section class="gp-shell gp-hero">
     <div class="gp-hero__body">
       <p class="gp-annotation">GlyphPact v{RELEASE.version}</p>
-      <h1>Your icon codepoints should never move.</h1>
+      <h1>Compile SVG icon packs for Flutter without moving codepoints</h1>
       <p class="gp-lede">
-        Compile a directory of SVG files into a validated OpenType font, a
+        Your icon codepoints should never move. Compile a directory of SVG files into a validated OpenType font, a
         committed codepoint lock, and const Flutter <code>IconData</code>.
         Existing icons keep their codepoints when the pack changes.
       </p>
@@ -95,9 +95,10 @@ abstract final class AppIcons {
       <InstallCommand explainInstall />
 
       <div class="gp-actions">
-        <a class="gp-btn gp-btn--primary" href={path(routes.codepoints.href)}>
-          How the codepoint lock works
+        <a class="gp-btn gp-btn--primary" href={path(routes.bulk.href)}>
+          Convert an SVG folder
         </a>
+        <a class="gp-btn" href={path(routes.codepoints.href)}>How the lock works</a>
         <a class="gp-btn" href={site.links.repo}>
           <GitHubIcon />
           Read the source
@@ -524,6 +525,29 @@ abstract final class AppIcons {
   </section>
 
   {/* ------------------------------------------------------ comparison */}
+  <section class="gp-section" aria-labelledby="changing-packs-heading">
+    <div class="gp-shell">
+      <div class="gp-head">
+        <p class="gp-annotation">Built for repeated updates</p>
+        <h2 id="changing-packs-heading">Built for icon packs that keep changing</h2>
+      </div>
+      <div class="gp-grid gp-grid--3">
+        <div class="gp-cell">
+          <h3><a href={path(routes.bulk.href)}>Convert an SVG folder to Flutter icons</a></h3>
+          <p>Discover nested files, audit the pack, and generate the font, Dart provider, lock, and report locally.</p>
+        </div>
+        <div class="gp-cell">
+          <h3><a href={path(routes.codepoints.href)}>Add icon batches without changing IconData</a></h3>
+          <p>Move from 3 icons to 5, 10, and 100 while every existing assignment remains fixed.</p>
+        </div>
+        <div class="gp-cell">
+          <h3><a href={path(routes.vsFlutterIcon.href)}>Investigate SVGs that render incorrectly</a></h3>
+          <p>See a reproducible FlutterIcon.com comparison with the exact SVG sources and generated fonts.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="gp-section" aria-labelledby="compare-heading">
     <div class="gp-shell">
       <div class="gp-head">

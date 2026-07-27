@@ -175,7 +175,7 @@ const flutterFlow = [
     <header class="gp-shell gp-secondary-hero">
       <div class="gp-secondary-hero__body">
         <p class="gp-annotation">Flutter integration</p>
-        <h1>Custom Flutter icons that keep their codepoints</h1>
+        <h1>Use a custom icon font in Flutter with const IconData</h1>
         <p class="gp-lede">
           GlyphPact compiles an SVG directory into an OpenType font plus a
           tree-shakeable <code>const IconData</code> class, and records every
@@ -202,7 +202,11 @@ const flutterFlow = [
       <div class="gp-shell">
         <div class="gp-head">
           <p class="gp-annotation">Quick start</p>
-          <h2 id="quickstart">From a directory of SVGs to a working Icon widget</h2>
+          <h2 id="quickstart">Register the generated font and provider in your app</h2>
+          <p class="gp-lede">
+            Need recursive folder conversion, pack auditing, sharding, and MCP?{" "}
+            <a href={path(routes.bulk.href)}>Start with the bulk SVG guide</a>.
+          </p>
         </div>
 
         <ol class="gp-steps gp-steps--compact">
@@ -531,6 +535,11 @@ const flutterFlow = [
           <a href={site.links.benchmarking}>benchmark guide</a> provides a
           reproducible local runner for measuring your own pack instead.
         </p>
+        <p>
+          The <a href={path(routes.bulk.href)}>bulk SVG-to-Flutter guide</a>
+          covers recursive discovery, CI, MCP automation, and the sharding plan
+          for catalogues that cannot fit in one font.
+        </p>
       </div>
     </section>
 
@@ -550,6 +559,10 @@ const flutterFlow = [
             <span>The versioned contract for exactly which SVG features compile.</span>
           </li>
           <li>
+            <a href={path(routes.bulk.href)}>Bulk SVG to Flutter icons</a>
+            <span>Recursive folders, audits, automation, and large-pack boundaries.</span>
+          </li>
+          <li>
             <a href={path(routes.codepoints.href)}>How codepoint stability works</a>
             <span>Why assignments move in other tools, and what the lock file does about it.</span>
           </li>
@@ -564,7 +577,7 @@ const flutterFlow = [
 
   <Faq page="flutter" heading="Flutter questions" />
 
-  <NextLinks keys={['codepoints', 'vsFlutterIcon']} />
+  <NextLinks keys={['bulk', 'codepoints', 'vsFlutterIcon']} />
 </Base>
 
 <style>

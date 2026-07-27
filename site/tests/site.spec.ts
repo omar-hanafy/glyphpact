@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 
 const pages = [
   '/glyphpact/',
+  '/glyphpact/bulk-svg-to-flutter-icons/',
   '/glyphpact/stable-codepoints/',
   '/glyphpact/flutter/',
   '/glyphpact/mcp/',
@@ -53,6 +54,171 @@ for (const colorScheme of ['dark', 'light'] as const) {
     expect(results.violations).toEqual([]);
   });
 }
+
+test('bulk guide owns folder conversion, automation, and capacity intent', async ({ page }) => {
+  await page.goto('/glyphpact/bulk-svg-to-flutter-icons/');
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Convert a folder of SVGs to Flutter icons',
+  );
+  const body = page.locator('body');
+  await expect(body).toContainText('Discovery is recursive');
+  await expect(body).toContainText('const Flutter IconData');
+  await expect(body).toContainText('Fail CI on stale output');
+  await expect(body).toContainText('audit_icon_pack');
+  await expect(body).toContainText('65,534 usable glyphs');
+  await expect(body).toContainText('sharded into independently named and versioned fonts');
+  await expect(body).toContainText('Fontello provides a browser catalogue');
+
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://omar-hanafy.github.io/glyphpact/bulk-svg-to-flutter-icons/',
+  );
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+    'content',
+    'https://omar-hanafy.github.io/glyphpact/og/bulk.png',
+  );
+});
+
+test('all workflow guides link to the bulk SVG page', async ({ page }) => {
+  const href = '/glyphpact/bulk-svg-to-flutter-icons/';
+  for (const route of [
+    '/glyphpact/',
+    '/glyphpact/flutter/',
+    '/glyphpact/mcp/',
+    '/glyphpact/stable-codepoints/',
+    '/glyphpact/vs/icomoon/',
+    '/glyphpact/vs/fluttericon/',
+  ]) {
+    await page.goto(route);
+    await expect(page.locator(`main a[href="${href}"]`).first(), route).toBeVisible();
+  }
+});
+
+test('stable codepoint guide covers repeated Figma batches without replacing its proof', async ({
+  page,
+}) => {
+  await page.goto('/glyphpact/stable-codepoints/');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Add Flutter icons without changing existing codepoints',
+  );
+  const growth = page.locator('.gp-codepoint-growth');
+  await expect(growth).toContainText('3');
+  await expect(growth).toContainText('5');
+  await expect(growth).toContainText('10');
+  await expect(growth).toContainText('100');
+  await expect(page.locator('body')).toContainText(
+    'The verified lock diff later on this page remains a smaller two-to-six fixture',
+  );
+});
+
+test('FlutterIcon comparison publishes the dated even-odd reproduction', async ({ page }) => {
+  await page.goto('/glyphpact/vs/fluttericon/');
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'A FlutterIcon.com alternative for repeatable Flutter icon builds',
+  );
+  await expect(page.locator('body')).toContainText(
+    'If image looks not as expected please convert to compound path manually',
+  );
+  await expect(page.locator('body')).toContainText('Skipped tags and attributes: ...');
+  await expect(page.locator('body')).toContainText('Hole lost');
+  await expect(page.locator('body')).toContainText('Dot lost');
+  await expect(page.locator('body')).toContainText('Cutout lost');
+  await expect(page.locator('body')).toContainText('Flutter 3.44.4 and Dart 3.12.2');
+  await expect(page.locator('body')).toContainText('Version 1.0.1');
+
+  const cover = page.locator('.gp-comparison-cover img');
+  await expect(cover).toHaveAttribute('width', '1000');
+  await expect(cover).toHaveAttribute('height', '420');
+  await expect(cover).toHaveAttribute(
+    'alt',
+    'The same location, chat, and mail glyphs with geometry lost in FlutterIcon.com and preserved by GlyphPact',
+  );
+  await expect(cover).toHaveAttribute(
+    'src',
+    '/glyphpact/images/comparisons/fluttericon-glyphpact-cover-2x.png',
+  );
+
+  const table = page.getByRole('table', {
+    name: /exact source SVG, FlutterIcon TTF glyph, and GlyphPact OTF\/CFF glyph/,
+  });
+  await expect(table.getByRole('columnheader')).toHaveCount(4);
+  await expect(table.getByRole('rowheader')).toHaveCount(3);
+  await expect(table.locator('tbody > tr')).toHaveCount(3);
+
+  const sourceImages = table.locator('.gp-render-cell--source img');
+  await expect(sourceImages).toHaveCount(3);
+  await expect(sourceImages.nth(0)).toHaveAttribute(
+    'alt',
+    'Original Location Bold SVG with a centre hole',
+  );
+  await expect(sourceImages.nth(1)).toHaveAttribute(
+    'alt',
+    'Original Chat Bold SVG with three dots',
+  );
+  await expect(sourceImages.nth(2)).toHaveAttribute(
+    'alt',
+    'Original Mail Bold SVG with an envelope cutout',
+  );
+  await expect(table.locator('.gp-evidence-glyph--fluttericon')).toHaveCount(3);
+  await expect(table.locator('.gp-evidence-glyph--glyphpact')).toHaveCount(3);
+
+  const loadedFonts = await page.evaluate(async () => {
+    const [flutterIconFaces, glyphPactFaces] = await Promise.all([
+      document.fonts.load('72px "FlutterIconEvidence"', '\ue805'),
+      document.fonts.load('72px "GlyphPactEvidence"', '\ue001'),
+    ]);
+    await document.fonts.ready;
+
+    return {
+      flutterIconFaces: flutterIconFaces.length,
+      glyphPactFaces: glyphPactFaces.length,
+      flutterIconReady: document.fonts.check('72px "FlutterIconEvidence"', '\ue805'),
+      glyphPactReady: document.fonts.check('72px "GlyphPactEvidence"', '\ue001'),
+    };
+  });
+  expect(loadedFonts).toEqual({
+    flutterIconFaces: 1,
+    glyphPactFaces: 1,
+    flutterIconReady: true,
+    glyphPactReady: true,
+  });
+
+  const goldenReference = page.locator('.gp-golden-reference');
+  await goldenReference.locator('summary').click();
+  const golden = goldenReference.locator('img');
+  await expect(golden).toBeVisible();
+  await expect(golden).toHaveAttribute('width', '800');
+  await expect(golden).toHaveAttribute('height', '640');
+  await expect(golden).toHaveAttribute(
+    'src',
+    '/glyphpact/images/comparisons/fluttericon-glyphpact-table-2x.png',
+  );
+  await expect(goldenReference.getByRole('link', { name: 'public fixture' })).toHaveAttribute(
+    'href',
+    'https://github.com/omar-hanafy/glyphpact/tree/main/examples/fluttericon-evenodd-comparison',
+  );
+  await expect(goldenReference.getByRole('link', { name: 'full app capture' })).toHaveAttribute(
+    'href',
+    '/glyphpact/images/comparisons/fluttericon-evenodd-comparison.png',
+  );
+});
+
+test('IcoMoon comparison reflects the current app rather than old selection.json claims', async ({
+  page,
+}) => {
+  await page.goto('/glyphpact/vs/icomoon/');
+  const body = page.locator('body');
+
+  await expect(body).toContainText('offline-first progressive web app');
+  await expect(body).toContainText('generate a Dart class for Flutter');
+  await expect(body).toContainText('icomoon.json');
+  await expect(body).toContainText('Replace by Matching Names');
+  await expect(body).toContainText('selection.json belongs to the old app');
+  await expect(body).not.toContainText('No Dart output');
+  await expect(body).not.toContainText('No CLI to run in CI');
+});
 
 test('public install guidance uses PyPI and pins only CI', async ({ page }) => {
   await page.goto('/glyphpact/');
@@ -158,7 +324,7 @@ test('MCP guide documents the portable server without leaking plugin-cache paths
   await page.goto('/glyphpact/mcp/');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Run GlyphPact from the agent you already use',
+    'Automate SVG-to-Flutter icon builds with MCP',
   );
   await expect(page.locator('.gp-mcp-client')).toHaveCount(10);
   await expect(page.locator('.gp-mcp-tool')).toHaveCount(4);
@@ -286,9 +452,9 @@ test('secondary heroes balance the decision copy and workflow proof', async ({ p
   await page.setViewportSize({ width: 1440, height: 900 });
 
   for (const route of [
+    '/glyphpact/bulk-svg-to-flutter-icons/',
     '/glyphpact/flutter/',
     '/glyphpact/vs/icomoon/',
-    '/glyphpact/vs/fluttericon/',
   ]) {
     await page.goto(route);
 
@@ -301,6 +467,23 @@ test('secondary heroes balance the decision copy and workflow proof', async ({ p
     expect(diagram!.width).toBeGreaterThan(430);
     expect(diagram!.x).toBeGreaterThan(copy!.x + copy!.width);
   }
+});
+
+test('FlutterIcon hero balances its decision copy and comparison cover', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/glyphpact/vs/fluttericon/');
+
+  const copy = await page.locator('.gp-secondary-hero__body').boundingBox();
+  const cover = await page.locator('.gp-secondary-hero .gp-comparison-cover').boundingBox();
+  const image = await page.locator('.gp-secondary-hero .gp-comparison-cover img').boundingBox();
+
+  expect(copy).not.toBeNull();
+  expect(cover).not.toBeNull();
+  expect(image).not.toBeNull();
+  expect(copy!.width).toBeGreaterThan(300);
+  expect(cover!.width).toBeGreaterThan(430);
+  expect(cover!.x).toBeGreaterThan(copy!.x + copy!.width);
+  expect(image!.width / image!.height).toBeCloseTo(1000 / 420, 2);
 });
 
 test('MCP hero balances its decision copy and local process map', async ({ page }) => {
@@ -317,29 +500,26 @@ test('MCP hero balances its decision copy and local process map', async ({ page 
   expect(route!.x).toBeGreaterThan(copy!.x + copy!.width);
 });
 
-test('comparison workflow lanes remain readable at desktop width', async ({ page }) => {
+test('IcoMoon comparison workflow lanes remain readable at desktop width', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/glyphpact/vs/icomoon/');
+  const lanes = page.locator('.gp-secondary-hero .gp-signal__lane');
+  await expect(lanes).toHaveCount(2);
 
-  for (const route of ['/glyphpact/vs/icomoon/', '/glyphpact/vs/fluttericon/']) {
-    await page.goto(route);
-    const lanes = page.locator('.gp-secondary-hero .gp-signal__lane');
-    await expect(lanes).toHaveCount(2);
+  for (const lane of await lanes.all()) {
+    const nodes = await lane.locator('li').evaluateAll((elements) =>
+      elements.map((element) => {
+        const box = element.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width };
+      }),
+    );
 
-    for (const lane of await lanes.all()) {
-      const nodes = await lane.locator('li').evaluateAll((elements) =>
-        elements.map((element) => {
-          const box = element.getBoundingClientRect();
-          return { x: box.x, y: box.y, width: box.width };
-        }),
-      );
-
-      expect(nodes).toHaveLength(3);
-      expect(nodes[0].x).toBe(nodes[1].x);
-      expect(nodes[1].x).toBe(nodes[2].x);
-      expect(nodes[0].width).toBe(nodes[2].width);
-      expect(nodes[1].y).toBeGreaterThan(nodes[0].y);
-      expect(nodes[2].y).toBeGreaterThan(nodes[1].y);
-    }
+    expect(nodes).toHaveLength(3);
+    expect(nodes[0].x).toBe(nodes[1].x);
+    expect(nodes[1].x).toBe(nodes[2].x);
+    expect(nodes[0].width).toBe(nodes[2].width);
+    expect(nodes[1].y).toBeGreaterThan(nodes[0].y);
+    expect(nodes[2].y).toBeGreaterThan(nodes[1].y);
   }
 });
 
@@ -490,6 +670,7 @@ for (const colorScheme of ['dark', 'light'] as const) {
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
 
     for (const route of [
+      '/glyphpact/bulk-svg-to-flutter-icons/',
       '/glyphpact/flutter/',
       '/glyphpact/mcp/',
       '/glyphpact/vs/icomoon/',

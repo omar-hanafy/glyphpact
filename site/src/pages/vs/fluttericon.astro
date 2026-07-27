@@ -1,19 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import Faq from '../../components/Faq.astro';
-import ComparisonTable from '../../components/ComparisonTable.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
+import ComparisonTable from '../../components/ComparisonTable.astro';
+import Faq from '../../components/Faq.astro';
 import InstallCommand from '../../components/InstallCommand.astro';
 import NextLinks from '../../components/NextLinks.astro';
-import SignalDiagram from '../../components/SignalDiagram.astro';
-import { path, routes } from '../../site.config';
+import { path, routes, site } from '../../site.config';
 import { columnSets, VERIFIED_ON } from '../../data/comparison';
 import { articleSchema, breadcrumbSchema, faqSchema } from '../../lib/schema';
 
 const r = routes.vsFlutterIcon;
-/** Two levels only; see the note in vs/icomoon.astro. */
-const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'FlutterIcon.com comparison' }];
+const crumbs = [{ name: 'GlyphPact', href: '/' }, { name: 'FlutterIcon.com alternative' }];
 const jsonLd = [
   articleSchema('vsFlutterIcon'),
   breadcrumbSchema(crumbs),
@@ -24,20 +22,48 @@ const compile = `glyphpact assets/icons \\
   --output lib/generated/app_icons \\
   --name AppIcons`;
 
-const workflowLanes = [
+const evidenceRows = [
   {
-    label: 'FlutterIcon.com',
-    tone: 'manual' as const,
-    nodes: ['Hosted selection', 'config.json', 'Downloaded bundle'],
-    meta: 'Session-backed workflow',
+    name: 'Location Bold',
+    source: path('/images/comparisons/source-svg/location-bold.svg'),
+    sourceAlt: 'Original Location Bold SVG with a centre hole',
+    flutterIcon: String.fromCodePoint(0xe805),
+    glyphPactIcon: String.fromCodePoint(0xe001),
+    defect: 'Hole lost',
   },
   {
-    label: 'GlyphPact',
-    tone: 'locked' as const,
-    nodes: ['SVG directory', 'Local compiler', 'Reviewed output'],
-    meta: 'Repository-backed workflow',
+    name: 'Chat Bold',
+    source: path('/images/comparisons/source-svg/chat-bold.svg'),
+    sourceAlt: 'Original Chat Bold SVG with three dots',
+    flutterIcon: String.fromCodePoint(0xe810),
+    glyphPactIcon: String.fromCodePoint(0xe000),
+    defect: 'Dot lost',
+  },
+  {
+    name: 'Mail Bold',
+    source: path('/images/comparisons/source-svg/mail-bold.svg'),
+    sourceAlt: 'Original Mail Bold SVG with an envelope cutout',
+    flutterIcon: String.fromCodePoint(0xe81a),
+    glyphPactIcon: String.fromCodePoint(0xe002),
+    defect: 'Cutout lost',
   },
 ];
+
+const evidenceFontFaces = `
+@font-face {
+  font-family: "FlutterIconEvidence";
+  src: url("${path('/fonts/comparisons/FlutterIcon.ttf')}") format("truetype");
+  font-display: block;
+  font-style: normal;
+  font-weight: 400;
+}
+@font-face {
+  font-family: "GlyphPactEvidence";
+  src: url("${path('/fonts/comparisons/GlyphPactIcons.otf')}") format("opentype");
+  font-display: block;
+  font-style: normal;
+  font-weight: 400;
+}`;
 ---
 
 <Base
@@ -52,184 +78,349 @@ const workflowLanes = [
   <article class="gp-secondary">
     <header class="gp-shell gp-secondary-hero">
       <div class="gp-secondary-hero__body">
-        <p class="gp-annotation">Comparison</p>
-        <h1>GlyphPact and FlutterIcon.com, compared fairly</h1>
+        <p class="gp-annotation">FlutterIcon.com alternative</p>
+        <h1>A FlutterIcon.com alternative for repeatable Flutter icon builds</h1>
         <p class="gp-lede">
-          Both turn SVG artwork into a Flutter icon font and a Dart icon class.
-          FlutterIcon.com does it in a hosted browser session with a library of
-          ready-made icon packs. GlyphPact does it as a local command with a
-          committed codepoint registry. The right answer depends on how often your
-          icon set changes and who changes it.
+          FlutterIcon.com is convenient for choosing bundled icons and making
+          occasional browser exports. GlyphPact is for SVG folders that change
+          repeatedly, where codepoints, diagnostics, generated Flutter
+          <code>IconData</code>, and CI checks must stay in the repository.
         </p>
       </div>
 
-      <SignalDiagram
-        caption="Operating model"
-        title="Session-backed or repository-backed"
-        lanes={workflowLanes}
-      />
+      <figure class="gp-comparison-cover">
+        <a href="#evidence-heading">
+          <img
+            src={path('/images/comparisons/fluttericon-glyphpact-cover-2x.png')}
+            alt="The same location, chat, and mail glyphs with geometry lost in FlutterIcon.com and preserved by GlyphPact"
+            width="1000"
+            height="420"
+            loading="eager"
+            decoding="async"
+          />
+        </a>
+        <figcaption>Actual Flutter font glyphs, rendered at 2x pixel density.</figcaption>
+      </figure>
     </header>
 
-    <section class="gp-section" aria-labelledby="what">
+    <section class="gp-section" aria-labelledby="decision-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Short answer</p>
+          <h2 id="decision-heading">Which workflow fits</h2>
+        </div>
+        <div class="gp-grid gp-grid--2 gp-decision-grid">
+          <div class="gp-cell" data-claims="third-party">
+            <h3>Choose FlutterIcon.com when</h3>
+            <ul class="gp-plainlist">
+              <li>You want to browse and mix its bundled open-source icon packs.</li>
+              <li>You have a small, occasional browser export.</li>
+              <li>You can retain and restore the downloaded <code>config.json</code>.</li>
+            </ul>
+          </div>
+          <div class="gp-cell">
+            <h3>Choose GlyphPact when</h3>
+            <ul class="gp-plainlist">
+              <li>Your source of truth is a local, nested SVG directory.</li>
+              <li>Another Figma delivery must not renumber existing icons.</li>
+              <li>Unsupported SVG details need typed, reviewable diagnostics.</li>
+              <li>CI or an MCP client must rebuild and check the same inputs.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="warning-heading">
       <div class="gp-shell gp-prose">
-        <h2 id="what">What FlutterIcon.com is</h2>
+        <h2 id="warning-heading">What “convert to compound path manually” actually means</h2>
         <p>
-          FlutterIcon.com is a Flutter-focused fork of
-          <a href="https://github.com/fontello/fontello">Fontello</a>, published as
-          <a href="https://github.com/ilikerobots/polyicon">ilikerobots/polyicon</a>
-          and MIT licensed. You pick icons from more than a dozen bundled
-          open-source webfonts, or drop in your own SVGs, and export a font plus a
-          Dart icon class. Its <code>config.json</code> records your selection,
-          including each glyph's code, and can be imported again later.
+          FlutterIcon.com may show this importer warning:
+        </p>
+        <blockquote class="gp-warning-quote">
+          If image looks not as expected please convert to compound path manually.
+          Skipped tags and attributes: ...
+        </blockquote>
+        <p>
+          The warning is not proof that an SVG is invalid. A font ultimately
+          needs glyph outlines, so expanding strokes and flattening artwork into
+          paths can help when tags or attributes such as <code>stroke</code> and
+          <code>stroke-width</code> cannot be translated. A single-colour icon
+          font also cannot preserve arbitrary fill colours.
         </p>
         <p>
-          That bundled library is a genuine advantage and GlyphPact has no answer
-          to it. If you want a Material-adjacent icon and do not want to source
-          the artwork yourself, FlutterIcon hands it to you in about a minute.
-          GlyphPact only compiles SVG files you already have.
+          It is not a universal repair. A valid SVG can already contain one
+          compound <code>&lt;path&gt;</code> whose holes depend on
+          <code>fill-rule="evenodd"</code>. For that case, test the generated
+          font in Flutter rather than assuming that another path conversion will
+          preserve the geometry.
         </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="model">
+    <section class="gp-section" aria-labelledby="evidence-heading">
       <div class="gp-shell">
         <div class="gp-head">
-          <p class="gp-annotation">The real difference</p>
-          <h2 id="model">A session you operate, or a command your build runs</h2>
+          <p class="gp-annotation">Rendered evidence</p>
+          <h2 id="evidence-heading">Three valid even-odd SVGs in one Flutter app</h2>
+          <p class="gp-lede">
+            This is a dated reproduction of three files, not a claim about every
+            SVG or every FlutterIcon.com export.
+          </p>
         </div>
 
+        <div class="gp-render-table-wrap">
+          <table class="gp-render-table">
+            <caption>
+              The exact source SVG, FlutterIcon TTF glyph, and GlyphPact OTF/CFF
+              glyph for each tested icon.
+            </caption>
+            <colgroup>
+              <col class="gp-render-table__name" />
+              <col />
+              <col />
+              <col />
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">Icon</th>
+                <th scope="col">
+                  <strong>Original SVG</strong>
+                  <span>Expected geometry</span>
+                </th>
+                <th scope="col" class="gp-render-table__fluttericon">
+                  <strong>FlutterIcon.com</strong>
+                  <span>Generated TTF</span>
+                </th>
+                <th scope="col" class="gp-render-table__glyphpact">
+                  <strong>GlyphPact</strong>
+                  <span>Generated OTF/CFF</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                evidenceRows.map((row) => (
+                  <tr>
+                    <th scope="row">
+                      <strong>{row.name}</strong>
+                      <code>fill-rule="evenodd"</code>
+                    </th>
+                    <td data-label="Original SVG">
+                      <div class="gp-render-cell gp-render-cell--source">
+                        <img src={row.source} alt={row.sourceAlt} width="72" height="72" />
+                        <span>Reference</span>
+                      </div>
+                    </td>
+                    <td data-label="FlutterIcon.com TTF">
+                      <div class="gp-render-cell gp-render-cell--lost">
+                        <span
+                          class="gp-evidence-glyph gp-evidence-glyph--fluttericon"
+                          aria-hidden="true"
+                        >
+                          {row.flutterIcon}
+                        </span>
+                        <span>{row.defect}</span>
+                      </div>
+                    </td>
+                    <td data-label="GlyphPact OTF/CFF">
+                      <div class="gp-render-cell gp-render-cell--preserved">
+                        <span
+                          class="gp-evidence-glyph gp-evidence-glyph--glyphpact"
+                          aria-hidden="true"
+                        >
+                          {row.glyphPactIcon}
+                        </span>
+                        <span>Preserved</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="gp-prose" style="margin-block-start: 2rem">
+          <p>
+            In this 2026-07-26 export, the FlutterIcon TTF lost the location
+            pin’s center hole, the chat bubble’s third dot, and the envelope
+            cutout. GlyphPact 1.0.1 preserved all three in the same Flutter
+            application.
+          </p>
+          <p>
+            The sources are single compound paths with
+            <code>fill-rule="evenodd"</code> and
+            <code>clip-rule="evenodd"</code>. The preserved FlutterIcon config
+            contains normalized path data but no fill-rule field. In the
+            generated TTF, those three subpaths rendered filled under the font’s
+            winding. GlyphPact 1.0.1 classified all three as lossless and
+            preserved the cutouts.
+          </p>
+          <p class="gp-note">
+            The screenshot labels the GlyphPact file “OpenType.” The exact
+            outputs are FlutterIcon TTF with TrueType outlines and GlyphPact OTF
+            with CFF outlines. TTF can also be an OpenType font, so the result
+            does not show that one container format is inherently more faithful.
+          </p>
+        </div>
+
+        <details class="gp-golden-reference">
+          <summary>Open the deterministic 2x Flutter golden</summary>
+          <figure>
+            <img
+              src={path('/images/comparisons/fluttericon-glyphpact-table-2x.png')}
+              alt="Deterministic Flutter golden comparing the original SVGs, FlutterIcon TTF glyphs, and GlyphPact OTF/CFF glyphs"
+              width="800"
+              height="640"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              Designed at 800 × 640 logical pixels and rendered by Flutter at
+              1600 × 1280. The
+              <a href={site.links.flutterIconComparison}>public fixture</a>
+              includes the generator, expected golden, fonts, SVGs, hashes, and
+              tests. The
+              <a href={path('/images/comparisons/fluttericon-evenodd-comparison.png')}
+                >full app capture</a
+              >
+              is preserved separately.
+            </figcaption>
+          </figure>
+        </details>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="provenance-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Experiment record</p>
+          <h2 id="provenance-heading">Versions and artifact identity</h2>
+        </div>
+        <dl class="gp-proof-list">
+          <div>
+            <dt>FlutterIcon.com</dt>
+            <dd>
+              Export downloaded 2026-07-26. No application version was present
+              in the bundle. TTF SHA-256:
+              <code>895a375775443487…</code>
+            </dd>
+          </div>
+          <div>
+            <dt>GlyphPact</dt>
+            <dd>
+              Version 1.0.1, strict build: 3 discovered, 3 lossless, 0
+              approximated, 0 skipped, 0 issues. OTF SHA-256:
+              <code>26a6c71d001d303d…</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Flutter toolchain</dt>
+            <dd>Flutter 3.44.4 and Dart 3.12.2.</dd>
+          </div>
+          <div>
+            <dt>Visual artifacts</dt>
+            <dd>
+              Responsive website table: exact SVGs and fonts. Deterministic
+              Flutter golden: 1600 × 1280,
+              <code>6b245024d7fa217a…</code>. Cover: 2000 × 840,
+              <code>0660eb4340aed9c6…</code>. Original 2x app capture:
+              <code>6eef4debc424f8a1…</code>.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="gp-section" aria-labelledby="model-heading">
+      <div class="gp-shell">
+        <div class="gp-head">
+          <p class="gp-annotation">Ongoing work</p>
+          <h2 id="model-heading">A browser export or a command the build can run</h2>
+        </div>
         <div class="gp-grid gp-grid--2 gp-decision-grid">
-          <div class="gp-cell">
-            <h3>Hosted session</h3>
+          <div class="gp-cell" data-claims="third-party">
+            <h3>Hosted selection</h3>
             <p>
-              Icon changes go through a browser: open the site, restore the
-              previous <code>config.json</code>, adjust the selection, export,
-              unzip, copy files into the project. The configuration is posted to
-              the service, which is where the session lives. Correct output
-              depends on someone performing those steps correctly.
-            </p>
-            <p>
-              A third-party Node CLI, <code>fontello-cli</code>, can install a
-              config against a host, which helps. It still talks to the hosted
-              service, and there is no check that fails when what is committed no
-              longer matches your sources.
+              Restore <code>config.json</code>, adjust the selection, export,
+              unzip, and copy files into the project. A third-party
+              <code>fontello-cli</code> can automate part of the Fontello
+              protocol, but FlutterIcon.com does not document a first-party local
+              compiler or repository-native stale-output check.
             </p>
           </div>
           <div class="gp-cell">
             <h3>Local compile</h3>
             <p>
-              Icon changes are file changes. Add an SVG, run one command, commit
-              the result. The codepoint registry is a file in the repository, so a
-              reviewer sees assignments in the diff, and CI can rebuild and
-              compare on every push.
+              Add SVGs, run one command, and review the resulting provider, lock,
+              report, and font. The same config can run on a developer machine,
+              in CI, or through the local MCP server.
             </p>
-            <p>
-              Nothing leaves the machine, and rebuilds are byte-identical given
-              the same inputs, so a regenerated font produces no spurious diff.
-            </p>
+            <CodeBlock title="bash" copy={compile}>{compile}</CodeBlock>
           </div>
         </div>
-
-        <div style="max-width: 46rem; margin-block-start: 2rem">
-          <CodeBlock title="The whole workflow" copy={compile}>{compile}</CodeBlock>
-        </div>
+        <p style="margin-block-start: 1.5rem">
+          <a href={path(routes.bulk.href)}
+            >Follow the complete bulk SVG-to-Flutter icon workflow</a
+          >.
+        </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="codepoints">
+    <section class="gp-section" aria-labelledby="codepoints-heading">
       <div class="gp-shell gp-prose">
-        <h2 id="codepoints">Codepoints</h2>
+        <h2 id="codepoints-heading">Both can preserve codepoints, under different conditions</h2>
         <p>
-          Fontello's <code>config.json</code> stores a code per glyph, so
-          re-importing it preserves your assignments. Like IcoMoon's
-          <code>selection.json</code>, this is a real mechanism whose reliability
-          depends on a human keeping the file and importing it every time.
+          FlutterIcon.com’s downloaded <code>config.json</code> records a code
+          for each glyph. Re-importing that file preserves those assignments.
+          Starting another browser selection without the previous config removes
+          that history.
         </p>
         <p>
-          GlyphPact differs in three ways that matter once more than one person
-          touches the icon set. The registry is written automatically into the
-          output rather than downloaded and re-uploaded. Deleted icons leave
-          permanent tombstones instead of releasing codepoints for reuse. And
-          <code>--check</code> gives CI a way to prove the committed font still
-          matches its sources, exiting <code>3</code> when it does not.
+          GlyphPact writes the history to <code>iconfont.lock.json</code> in the
+          generated output, reads it automatically, tombstones deleted values,
+          and lets <code>--check</code> fail CI when the committed artifacts no
+          longer match the sources.
         </p>
         <p>
           <a href={path(routes.codepoints.href)}
-            >The codepoint registry explained, with a real lock file diff</a
-          >
+            >Add Flutter icons without changing existing codepoints</a
+          >.
         </p>
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="fidelity">
-      <div class="gp-shell gp-prose">
-        <h2 id="fidelity">Unsupported SVG features</h2>
-        <p>
-          Neither FlutterIcon.com nor the pub.dev package
-          <a href="https://pub.dev/packages/icon_font_generator">icon_font_generator</a>
-          publishes a policy for SVG that a monochrome outline font cannot
-          represent. That does not mean they handle it badly; it means the
-          behaviour is not specified, so you learn it by finding out.
-        </p>
-        <p>
-          GlyphPact specifies it. Every source lands in exactly one of three
-          outcomes, both policy axes default to <code>error</code>, and every
-          approximation or omission is reported with a diagnostic code, a
-          classification, an action, and the feature responsible. A build that
-          would quietly degrade an icon fails instead, until you say otherwise.
-        </p>
-        <p class="gp-note gp-note--lossy">
-          <strong>This cuts both ways.</strong> Strict defaults mean GlyphPact
-          will reject a pack that another generator would happily compile. If you
-          have a pile of decorative SVGs with gradients and filters and you just
-          want <em>something</em> rendered, GlyphPact will feel obstructive. That
-          is the intended trade, not an oversight.
-        </p>
-      </div>
-    </section>
-
-    <section class="gp-section" aria-labelledby="table">
+    <section class="gp-section" aria-labelledby="table-heading">
       <div class="gp-shell">
         <div class="gp-head">
           <p class="gp-annotation">Side by side</p>
-          <h2 id="table">The full comparison</h2>
-          <p class="gp-lede">
-            <code>icon_font_generator</code> is included because it is the other
-            common answer to this problem: a pure-Dart CLI with no hosted
-            component.
-          </p>
+          <h2 id="table-heading">The broader comparison</h2>
         </div>
         <ComparisonTable
           columns={columnSets.fluttericon}
-          caption="GlyphPact v1.0.0 against the two most common Flutter icon-font alternatives."
+          caption="GlyphPact v1.1.0, FlutterIcon.com, and icon_font_generator on their documented workflow capabilities."
         />
       </div>
     </section>
 
-    <section class="gp-section" aria-labelledby="try">
+    <section class="gp-section" aria-labelledby="try-heading">
       <div class="gp-shell gp-try-band">
         <div class="gp-head">
-          <p class="gp-annotation">Try it</p>
-          <h2 id="try">Compile a pack you already have</h2>
+          <p class="gp-annotation">Try locally</p>
+          <h2 id="try-heading">Compile a pack you already have</h2>
         </div>
         <div class="gp-try-band__body">
           <InstallCommand explainInstall />
-          <p class="gp-muted" style="margin-block-start: 1.25rem; max-width: 62ch">
-            If you currently use FlutterIcon.com, export your set once, commit the
-            SVG sources, and compile from those. GlyphPact does not care what drew
-            them.
-          </p>
-
           <p class="gp-verified" style="margin-block-start: 2rem">
-            <strong>Verified on {VERIFIED_ON}</strong>
+            <strong>Workflow comparison verified on {VERIFIED_ON}</strong>
             <span>
-              against <a href="https://www.fluttericon.com/">fluttericon.com</a>,
-              <a href="https://github.com/ilikerobots/polyicon">ilikerobots/polyicon</a>,
-              <a href="https://github.com/fontello/fontello">fontello/fontello</a>,
-              and
+              against <a href="https://www.fluttericon.com/">FlutterIcon.com</a>,
+              <a href="https://github.com/ilikerobots/polyicon">polyicon</a>,
+              <a href="https://github.com/fontello/fontello">Fontello</a>, and
               <a href="https://pub.dev/packages/icon_font_generator"
-                >pub.dev/packages/icon_font_generator</a
-              >. If any of this has changed, it should be corrected.
+                >icon_font_generator</a
+              >. The visual experiment remains separately dated 2026-07-26.
             </span>
           </p>
         </div>
@@ -237,7 +428,384 @@ const workflowLanes = [
     </section>
   </article>
 
-  <Faq page="fluttericon" heading="Questions about the comparison" />
+  <Faq page="fluttericon" heading="Questions about FlutterIcon.com alternatives" />
 
-  <NextLinks keys={['flutter', 'codepoints', 'vsIcomoon']} />
+  <NextLinks keys={['bulk', 'flutter', 'codepoints', 'vsIcomoon']} />
 </Base>
+
+<style is:inline set:html={evidenceFontFaces}></style>
+
+<style>
+  .gp-plainlist {
+    list-style: none;
+    padding: 0;
+    margin: 0.4rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    font-size: 0.94rem;
+    color: var(--text-muted);
+  }
+
+  .gp-plainlist li {
+    position: relative;
+    padding-inline-start: 1.2rem;
+  }
+
+  .gp-plainlist li::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: 0.52em;
+    inline-size: 6px;
+    block-size: 6px;
+    background: var(--accent);
+    transform: rotate(45deg);
+  }
+
+  .gp-warning-quote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.2rem;
+    border-inline-start: 3px solid var(--lossy);
+    background: color-mix(in srgb, var(--lossy) 8%, var(--bg-raised));
+    color: var(--text);
+    font-family: var(--gp-font-mono);
+    font-size: 0.9rem;
+  }
+
+  .gp-comparison-cover {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--gp-radius-lg);
+    background: #080b0f;
+    box-shadow: var(--shadow);
+  }
+
+  .gp-comparison-cover a {
+    display: block;
+  }
+
+  .gp-comparison-cover img {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+  }
+
+  .gp-comparison-cover figcaption {
+    padding: 0.7rem 0.9rem;
+    border-block-start: 1px solid var(--rule);
+    color: var(--text-muted);
+    background: var(--bg-raised);
+    font-family: var(--gp-font-mono);
+    font-size: 0.7rem;
+  }
+
+  .gp-render-table-wrap {
+    overflow: hidden;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--gp-radius-lg);
+    background: #080b0f;
+    box-shadow: var(--shadow);
+  }
+
+  .gp-render-table {
+    inline-size: 100%;
+    min-inline-size: 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+    color: #f4f7fb;
+    background:
+      radial-gradient(circle at 92% 0%, rgb(19 35 28 / 0.8), transparent 55%),
+      #080b0f;
+  }
+
+  .gp-render-table caption {
+    padding: 0.9rem 1rem;
+    color: #9ba7b7;
+    border-block-end: 1px solid #242b34;
+    background: #080b0f;
+    text-align: start;
+    font-size: 0.78rem;
+  }
+
+  .gp-render-table__name {
+    inline-size: 16%;
+  }
+
+  .gp-render-table th,
+  .gp-render-table td {
+    padding: clamp(0.8rem, 2vw, 1.25rem);
+    border-block-end: 1px solid #242b34;
+    vertical-align: middle;
+  }
+
+  .gp-render-table th + th,
+  .gp-render-table th + td,
+  .gp-render-table td + td {
+    border-inline-start: 1px solid #242b34;
+  }
+
+  .gp-render-table thead th {
+    color: #f4f7fb;
+    background: #080b0f;
+    text-align: start;
+  }
+
+  .gp-render-table thead strong,
+  .gp-render-table thead span {
+    display: block;
+  }
+
+  .gp-render-table thead strong {
+    font-size: clamp(0.78rem, 1.3vw, 1rem);
+    text-transform: uppercase;
+  }
+
+  .gp-render-table thead span {
+    margin-block-start: 0.25rem;
+    color: #768296;
+    font-size: 0.72rem;
+  }
+
+  .gp-render-table thead .gp-render-table__fluttericon strong {
+    color: #ff817c;
+  }
+
+  .gp-render-table thead .gp-render-table__glyphpact strong {
+    color: #4be18b;
+  }
+
+  .gp-render-table tbody th {
+    text-align: start;
+  }
+
+  .gp-render-table tbody th strong,
+  .gp-render-table tbody th code {
+    display: block;
+  }
+
+  .gp-render-table tbody th strong {
+    font-size: 0.95rem;
+  }
+
+  .gp-render-table tbody th code {
+    margin-block-start: 0.35rem;
+    padding: 0;
+    color: #768296;
+    border: 0;
+    background: transparent;
+    font-size: 0.68rem;
+  }
+
+  .gp-render-table tbody tr:last-child > * {
+    border-block-end: 0;
+  }
+
+  .gp-render-cell {
+    min-block-size: 7rem;
+    padding: 0.85rem;
+    display: grid;
+    grid-template-columns: minmax(3.8rem, 4.5rem) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.7rem;
+    border: 1px solid #2a333f;
+    border-radius: 0.8rem;
+    background: #0e1319;
+    color: #9ba7b7;
+    font-weight: 650;
+  }
+
+  .gp-render-cell--lost {
+    color: #ff817c;
+    border-color: #3c2a2e;
+    background: #1a1113;
+  }
+
+  .gp-render-cell--preserved {
+    color: #4be18b;
+    border-color: #213a2d;
+    background: #0e1913;
+  }
+
+  .gp-render-cell img,
+  .gp-evidence-glyph {
+    inline-size: 4.5rem;
+    block-size: 4.5rem;
+  }
+
+  .gp-render-cell img {
+    object-fit: contain;
+  }
+
+  .gp-evidence-glyph {
+    display: grid;
+    place-items: center;
+    font-size: 4.5rem;
+    line-height: 1;
+    font-synthesis: none;
+  }
+
+  .gp-evidence-glyph--fluttericon {
+    font-family: 'FlutterIconEvidence';
+  }
+
+  .gp-evidence-glyph--glyphpact {
+    font-family: 'GlyphPactEvidence';
+  }
+
+  .gp-golden-reference {
+    margin-block-start: 1.5rem;
+    border-block: 1px solid var(--rule);
+  }
+
+  .gp-golden-reference summary {
+    padding-block: 0.9rem;
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 650;
+  }
+
+  .gp-golden-reference figure {
+    max-inline-size: 800px;
+    margin: 0 auto 1.25rem;
+  }
+
+  .gp-golden-reference img {
+    inline-size: min(100%, 800px);
+    block-size: auto;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--gp-radius-lg);
+  }
+
+  .gp-golden-reference figcaption {
+    margin-block-start: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+
+  .gp-proof-list {
+    margin: 0;
+    border-block: 1px solid var(--rule);
+  }
+
+  .gp-proof-list > div {
+    display: grid;
+    grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    padding: 1rem 0;
+  }
+
+  .gp-proof-list > div + div {
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .gp-proof-list dt {
+    color: var(--text);
+    font-weight: 650;
+  }
+
+  .gp-proof-list dd {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 58rem) {
+    .gp-render-table-wrap {
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .gp-render-table,
+    .gp-render-table tbody,
+    .gp-render-table tr,
+    .gp-render-table th,
+    .gp-render-table td {
+      display: block;
+      inline-size: 100%;
+    }
+
+    .gp-render-table {
+      border: 1px solid var(--rule-strong);
+      border-radius: var(--gp-radius-lg);
+      overflow: hidden;
+    }
+
+    .gp-render-table colgroup {
+      display: none;
+    }
+
+    .gp-render-table caption {
+      display: block;
+      inline-size: 100%;
+      box-sizing: border-box;
+    }
+
+    .gp-render-table thead {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .gp-render-table tbody th {
+      padding-block-end: 0.55rem;
+      border-block-end: 0;
+    }
+
+    .gp-render-table td {
+      padding-block: 0.55rem;
+      border-block-end: 0;
+      border-inline-start: 0 !important;
+    }
+
+    .gp-render-table td::before {
+      content: attr(data-label);
+      display: block;
+      margin-block-end: 0.35rem;
+      color: #768296;
+      font-family: var(--gp-font-mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+    }
+
+    .gp-render-table tbody tr {
+      padding: 0.5rem;
+      border-block-end: 1px solid #242b34;
+    }
+
+    .gp-render-table tbody tr:last-child {
+      border-block-end: 0;
+    }
+  }
+
+  @media (max-width: 36rem) {
+    .gp-render-cell {
+      min-block-size: 5.75rem;
+      grid-template-columns: 3.7rem minmax(0, 1fr);
+    }
+
+    .gp-render-cell img,
+    .gp-evidence-glyph {
+      inline-size: 3.7rem;
+      block-size: 3.7rem;
+    }
+
+    .gp-evidence-glyph {
+      font-size: 3.7rem;
+    }
+
+    .gp-proof-list > div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.35rem;
+    }
+  }
+</style>

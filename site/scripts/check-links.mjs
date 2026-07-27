@@ -251,6 +251,7 @@ if (!existsSync(sitemapIndex)) {
 
   const expected = [
     '/',
+    '/bulk-svg-to-flutter-icons/',
     '/stable-codepoints/',
     '/flutter/',
     '/mcp/',

@@ -21,6 +21,7 @@
  */
 
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, extname } from 'node:path';
 import { execSync } from 'node:child_process';
 
@@ -29,6 +30,131 @@ const failures = [];
 const notes = [];
 const allowUnreleasedVersion =
   process.env.GLYPHPACT_ALLOW_UNRELEASED_SITE_VERSION === '1';
+
+/* ---------------------------------------- preserved comparison evidence */
+
+const comparisonRoot = '../examples/fluttericon-evenodd-comparison';
+const evidenceFiles = {
+  'site screenshot': {
+    path: 'public/images/comparisons/fluttericon-evenodd-comparison.png',
+    sha256: '9f1e72cbfb94f606e4e2bd72c866117e995bff4ad98367505e3df8576074e894',
+  },
+  'public DEV article cover': {
+    path: 'public/images/comparisons/fluttericon-glyphpact-cover-2x.png',
+    sha256: '0660eb4340aed9c62d75a764efba63e9b60338d538fa204fe7b98d3c524d8d81',
+  },
+  'public DEV article comparison table': {
+    path: 'public/images/comparisons/fluttericon-glyphpact-table-2x.png',
+    sha256: '6b245024d7fa217a51f95f8de9ce225cc5187d6c08b865b6fbcc7625402f4813',
+  },
+  'article graphics golden test': {
+    path: `${comparisonRoot}/test/article_graphics_test.dart`,
+    sha256: '96610c53328819fdb0a408b035e30dcbe92ec06a8f0b898b03d06b5b30e490ba',
+  },
+  'expected DEV article cover': {
+    path: `${comparisonRoot}/test/goldens/glyphpact-dev-cover-2x.png`,
+    sha256: '0660eb4340aed9c62d75a764efba63e9b60338d538fa204fe7b98d3c524d8d81',
+  },
+  'expected DEV article comparison table': {
+    path: `${comparisonRoot}/test/goldens/glyphpact-dev-comparison-v3-2x.png`,
+    sha256: '6b245024d7fa217a51f95f8de9ce225cc5187d6c08b865b6fbcc7625402f4813',
+  },
+  '2x source screenshot': {
+    path: `${comparisonRoot}/evidence/comparison-source-2x.png`,
+    sha256: '6eef4debc424f8a1070bfaa9f01020e337da14044850a107768761cfd63503b2',
+  },
+  'FlutterIcon TTF': {
+    path: `${comparisonRoot}/assets/fluttericon/fonts/FlutterIcon.ttf`,
+    sha256: '895a37577544348719553dc43adf43ebdb95ccdc7f41655d8d8837f5e1459607',
+  },
+  'GlyphPact OTF': {
+    path: `${comparisonRoot}/lib/generated/glyphpact/fonts/GlyphPactIcons.otf`,
+    sha256: '26a6c71d001d303d31ebedee5857baa58c9399499f77f32e1925d71c556eeea0',
+  },
+  'public FlutterIcon TTF': {
+    path: 'public/fonts/comparisons/FlutterIcon.ttf',
+    sha256: '895a37577544348719553dc43adf43ebdb95ccdc7f41655d8d8837f5e1459607',
+  },
+  'public GlyphPact OTF': {
+    path: 'public/fonts/comparisons/GlyphPactIcons.otf',
+    sha256: '26a6c71d001d303d31ebedee5857baa58c9399499f77f32e1925d71c556eeea0',
+  },
+  'Chat Bold fixture SVG': {
+    path: `${comparisonRoot}/assets/source_svg/Chat Bold.svg`,
+    sha256: 'b5f61cf41dabe05e951a168e326c978e0df1629c41e290383ff0768c513f5596',
+  },
+  'public Chat Bold SVG': {
+    path: 'public/images/comparisons/source-svg/chat-bold.svg',
+    sha256: 'b5f61cf41dabe05e951a168e326c978e0df1629c41e290383ff0768c513f5596',
+  },
+  'Location Bold fixture SVG': {
+    path: `${comparisonRoot}/assets/source_svg/Location Bold.svg`,
+    sha256: 'e94b5515ac6fdd17f56cc6eac61505772b2f49485fecec53712076fa26b51246',
+  },
+  'public Location Bold SVG': {
+    path: 'public/images/comparisons/source-svg/location-bold.svg',
+    sha256: 'e94b5515ac6fdd17f56cc6eac61505772b2f49485fecec53712076fa26b51246',
+  },
+  'Mail Bold fixture SVG': {
+    path: `${comparisonRoot}/assets/source_svg/Mail Bold.svg`,
+    sha256: 'b349f283ef049a50afd848214e7cc52e9cb4dda2e291a590c2f53968855b62b9',
+  },
+  'public Mail Bold SVG': {
+    path: 'public/images/comparisons/source-svg/mail-bold.svg',
+    sha256: 'b349f283ef049a50afd848214e7cc52e9cb4dda2e291a590c2f53968855b62b9',
+  },
+};
+
+for (const [label, evidence] of Object.entries(evidenceFiles)) {
+  if (!existsSync(evidence.path)) {
+    failures.push(`Missing preserved comparison ${label}: ${evidence.path}.`);
+    continue;
+  }
+  const actual = createHash('sha256').update(readFileSync(evidence.path)).digest('hex');
+  if (actual !== evidence.sha256) {
+    failures.push(
+      `Preserved comparison ${label} changed. Expected SHA-256 ${evidence.sha256}, got ${actual}.`,
+    );
+  }
+}
+
+const sourceFixtures = ['Chat Bold.svg', 'Location Bold.svg', 'Mail Bold.svg'];
+for (const file of sourceFixtures) {
+  const source = `${comparisonRoot}/assets/source_svg/${file}`;
+  if (!existsSync(source)) {
+    failures.push(`Missing comparison SVG fixture: ${source}.`);
+    continue;
+  }
+  const svg = readFileSync(source, 'utf8');
+  if (!svg.includes('fill-rule="evenodd"') || !svg.includes('clip-rule="evenodd"')) {
+    failures.push(`${source} must retain its even-odd fill and clip rules.`);
+  }
+}
+
+const comparisonReportPath =
+  `${comparisonRoot}/lib/generated/glyphpact/iconfont.report.json`;
+if (!existsSync(comparisonReportPath)) {
+  failures.push(`Missing historical comparison report: ${comparisonReportPath}.`);
+} else {
+  const report = JSON.parse(readFileSync(comparisonReportPath, 'utf8'));
+  if (
+    report.generatorVersion !== '1.0.1' ||
+    report.quality !== 'lossless' ||
+    report.glyphCount !== 3 ||
+    report.losslessGlyphCount !== 3 ||
+    report.approximatedGlyphCount !== 0 ||
+    report.skippedIconCount !== 0 ||
+    report.issueCount !== 0
+  ) {
+    failures.push(
+      'Historical comparison report must remain GlyphPact 1.0.1 with 3 lossless glyphs and 0 approximated, skipped, or reported issues.',
+    );
+  }
+}
+
+if (!failures.length) {
+  notes.push('Preserved FlutterIcon comparison fixtures and hashes are intact.');
+}
 
 /* ------------------------------------------------- 1. version vs git tag */
 

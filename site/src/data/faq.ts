@@ -20,7 +20,7 @@ export interface FaqEntry {
   answer: string[];
   more?: { label: string; href: string };
   /** Which pages render this entry. */
-  pages: Array<'home' | 'codepoints' | 'flutter' | 'mcp' | 'icomoon' | 'fluttericon'>;
+  pages: Array<'home' | 'bulk' | 'codepoints' | 'flutter' | 'mcp' | 'icomoon' | 'fluttericon'>;
 }
 
 export const faq: FaqEntry[] = [
@@ -28,7 +28,7 @@ export const faq: FaqEntry[] = [
     id: 'why-codepoints-change',
     question: 'Why do icon-font codepoints change when icons are added?',
     answer: [
-      'Most icon-font generators assign codepoints by walking the current set of source files and handing out values in order, starting from the beginning of a private use area such as U+E000. The assignment is a function of the file list, not a stored decision. Insert an icon whose name sorts early, rename a file, or reorder a selection, and every icon after that point shifts by one.',
+      'A generator that derives codepoints from the current source list can shift assignments when the list changes. Insert an icon whose name sorts early, rename a file, or start a new browser import without restoring the previous project, and every icon after that point can move.',
       'The font itself is then internally consistent, so nothing fails at build time. The breakage appears in application code that still refers to the old value: a constant for a back arrow keeps pointing at U+E001 while U+E001 now contains a different glyph. The icon renders, it is simply the wrong picture.',
     ],
     pages: ['home', 'codepoints'],
@@ -112,9 +112,9 @@ export const faq: FaqEntry[] = [
     id: 'icomoon-alternative',
     question: 'Is GlyphPact an IcoMoon alternative?',
     answer: [
-      'For a repository-driven workflow, yes. For a general web icon workflow, not entirely.',
-      'GlyphPact overlaps with IcoMoon in turning SVG files into an icon font, and it adds things a browser app cannot: a committed lock file that fixes codepoints, a --check mode that fails CI when generated output goes stale, byte-identical rebuilds, and a generated Flutter IconData API.',
-      'IcoMoon does things GlyphPact does not. It exports web font formats and CSS along with React, Vue, and Elm components, it offers a visual editor for browsing and editing glyphs, and it processes artwork in the browser without uploading it. If the goal is a web icon font with a stylesheet, IcoMoon covers ground GlyphPact currently does not.',
+      'Yes, when the requirement is a repository-managed Flutter icon pipeline. Both tools import SVG folders, run locally or offline, and can generate Flutter output.',
+      'IcoMoon is stronger for visual editing, bundled libraries, and broad output formats. Its current app exports a Dart class for Flutter, imports files and folders, and can replace glyphs by matching names while retaining their metadata.',
+      'GlyphPact is different at the build boundary. It provides a first-party local compiler, a committed codepoint lock with permanent tombstones, typed SVG audit results, byte-identical rebuilds, and a --check command that fails CI when generated output is stale.',
     ],
     more: { label: 'Full IcoMoon comparison', href: '/vs/icomoon/' },
     pages: ['home', 'icomoon'],
@@ -123,8 +123,8 @@ export const faq: FaqEntry[] = [
     id: 'icomoon-codepoints',
     question: 'Does IcoMoon change codepoints when you add icons?',
     answer: [
-      'Not if the previous session file is re-imported. IcoMoon documents that the codes of previously selected glyphs will not change when the selection.json file from an earlier download is imported back into the app.',
-      'The condition matters, though. IcoMoon also documents that newly imported SVGs arrive with no codes assigned, so re-importing all artwork and reselecting it each time will most likely produce different codes. Stability therefore depends on retaining that file and importing it correctly on every future change, which is a human step in a browser session rather than something a build can verify.',
+      'IcoMoon can preserve existing codepoints. Its current app stores a project in icomoon.json and offers Replace by Matching Names so updated artwork can keep the matching glyph metadata. The older app used selection.json.',
+      'That stability depends on retaining and restoring the project, then using the matching-name update workflow correctly. GlyphPact stores the mapping in iconfont.lock.json inside the generated output and reads it automatically on every build.',
       'GlyphPact addresses the same problem differently: the codepoint registry is a file inside the repository, and a --check run in CI fails when committed output no longer matches its sources.',
     ],
     pages: ['icomoon'],
@@ -139,6 +139,62 @@ export const faq: FaqEntry[] = [
     ],
     more: { label: 'Full FlutterIcon comparison', href: '/vs/fluttericon/' },
     pages: ['fluttericon'],
+  },
+  {
+    id: 'bulk-folder-to-icondata',
+    question: 'Can GlyphPact convert a folder of SVGs to Flutter IconData?',
+    answer: [
+      'Yes. Point the GlyphPact CLI at an SVG directory and choose an output directory and class name. One build emits an OpenType/CFF icon font, a const Flutter IconData provider, iconfont.lock.json, iconfont.report.json, and ATTRIBUTION.md.',
+      'The generated output is meant to be committed. Later builds reuse the lock so adding another SVG batch does not renumber existing IconData constants.',
+    ],
+    more: { label: 'Bulk SVG workflow', href: '/bulk-svg-to-flutter-icons/' },
+    pages: ['home', 'bulk'],
+  },
+  {
+    id: 'bulk-recursive',
+    question: 'Does GlyphPact scan nested SVG folders recursively?',
+    answer: [
+      'Yes. GlyphPact discovers .svg files recursively below the input directory and uses normalized relative paths as source identities. A pack can keep folders such as navigation, status, and social without flattening them before compilation.',
+      'Run an audit first when a large pack comes from several designers. The report groups typed findings by source file, and the same directory can then be compiled through the CLI or MCP server.',
+    ],
+    pages: ['bulk'],
+  },
+  {
+    id: 'hundred-thousand-icons',
+    question: 'Can GlyphPact convert 100,000 SVGs into one icon font?',
+    answer: [
+      'No single GlyphPact font can contain 100,000 usable icon glyphs. GlyphPact enforces the OpenType ceiling of 65,534 usable glyphs per font. The default BMP private use range is smaller, with 6,400 lifetime assignments, and tombstones consume slots because codepoints are never reused.',
+      'A complete supplementary private use range provides up to 65,534 assignments. Larger catalogues must be divided into independently versioned fonts. File count alone does not predict build time, so benchmark the real SVG corpus instead of relying on a headline throughput claim.',
+    ],
+    pages: ['bulk'],
+  },
+  {
+    id: 'fluttericon-compound-path',
+    question: 'What does FlutterIcon.com’s “convert to compound path manually” warning mean?',
+    answer: [
+      'FlutterIcon.com may show: “If image looks not as expected please convert to compound path manually. Skipped tags and attributes: ...” It is an importer warning, not proof that the source SVG is invalid.',
+      'An icon font needs glyph outlines. Expanding strokes and flattening artwork into paths can help when tags or attributes cannot be translated, but it is not a universal fix for every valid SVG or every fill-rule problem. Test the generated font in Flutter, not only the browser preview.',
+    ],
+    more: { label: 'Tested FlutterIcon.com comparison', href: '/vs/fluttericon/' },
+    pages: ['bulk', 'fluttericon'],
+  },
+  {
+    id: 'fontello-alternative',
+    question: 'Is GlyphPact a Fontello alternative?',
+    answer: [
+      'Yes for local, repository-controlled Flutter icon generation. GlyphPact compiles your SVG sources locally, keeps codepoints in a committed lock, audits unsupported SVG features, and checks generated output in CI.',
+      'Fontello is a better fit when you want its browser catalogue and web-font export workflow. Fontello also has a developer API and third-party CLI tooling, so the distinction is not “automation versus no automation.” The distinction is a first-party repository build and staleness check.',
+    ],
+    pages: ['bulk', 'fluttericon'],
+  },
+  {
+    id: 'icon-font-or-svg',
+    question: 'Should I use an icon font or flutter_svg?',
+    answer: [
+      'Use an icon font when the artwork is monochrome, is reused throughout the interface, and should behave like text through IconData, IconTheme, and font subsetting. Use flutter_svg when an image needs multiple colours, gradients, filters, animation, or other SVG semantics that a monochrome glyph cannot preserve.',
+      'For mixed packs, audit first and keep unsuitable artwork as SVG assets. Converting every file is not the goal; choosing a faithful runtime representation is.',
+    ],
+    pages: ['bulk', 'flutter'],
   },
   {
     id: 'icon-catalog',
